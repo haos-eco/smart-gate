@@ -36,7 +36,7 @@ Train a custom YOLOv11 model on your specific plates/cameras
 Upload `model.onnx` to Home Assistant:
 
 **Via File Editor addon:**
-1. Create folder: `/config/www/smart_gate/`
+1. Create folder (it should be created automatically): `/config/www/smart_gate/`
 2. Upload `model.onnx` there
 
 **Via Samba/SSH:**

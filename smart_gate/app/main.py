@@ -212,6 +212,15 @@ def main():
     keep_history = bool(opt.get("keep_history", False))
     debug = bool(opt.get("debug", False))
 
+    # Creates model dir if not exists
+    model_dir = os.path.dirname(model_path)
+    try:
+        os.makedirs(model_dir, exist_ok=True)
+        print(f"✅ Model directory ready: {model_dir}")
+    except Exception as e:
+        print(f"❌ ERROR: Cannot create directory {model_dir}: {e}")
+        return
+
     # check if model exists
     if not os.path.exists(model_path):
         print(f"❌ ERROR: ONNX model not found at: {model_path}")
