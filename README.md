@@ -1,6 +1,6 @@
 # Smart Gate v1
 
-_plates recognition for automatic gate opening, smart notification, using Reolink Camera, YOLO and OCR_
+_plates recognition for automatic gate opening, smart notification, using Reolink Camera, Shelly, YOLO and OCR_
 
 ![Supports aarch64 Architecture][aarch64-shield]
 ![Supports amd64 Architecture][amd64-shield]
