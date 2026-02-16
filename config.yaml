@@ -1,0 +1,43 @@
+name: Smart Gate
+version: 1.0.0
+slug: smart_gate
+panel_icon: mdi:gate
+description: >-
+  plates recognition for automatic gate opening, smart notification, using Reolink Camera, YOLO and OCR
+arch:
+  - amd64
+  - aarch64
+startup: services
+boot: auto
+init: false
+host_network: true
+hassio_api: true
+homeassistant_api: true
+map:
+  - config:rw
+options:
+  motion_entity: binary_sensor.ingresso_veicolo
+  camera_entity: camera.ingresso_high_quality
+  gate_switch: switch.cancello
+  cooldown_sec: 120
+  allowed_plates:
+  snapshot_path: /config/www/smart-gate/latest-snapshot.jpg
+  roi: "0.0,0.0,1.0,1.0"
+  yolo_model: plates_model.onnx
+  confidence: 0.5
+  history_dir: /config/www/smart-gate/history
+  keep_history: false
+  debug: false
+schema:
+  motion_entity: str
+  camera_entity: str
+  gate_switch: str
+  cooldown_sec: int
+  allowed_plates: [str]
+  snapshot_path: str
+  roi: str
+  yolo_model: str
+  confidence: float
+  history_dir: str
+  keep_history: bool
+  debug: bool

@@ -1,0 +1,27 @@
+name: Update Changelog
+on:
+  push:
+    branches:
+      - main
+jobs:
+  update-changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        uses: orhun/git-cliff-action@v2
+        with:
+          config: cliff.toml
+          args: --output CHANGELOG.md
+
+      - name: Commit and push changelog
+        run: |
+          git config --local user.email "andreaemmanuele98@gmail.com"
+          git config --local user.name "andreaemmanuele"
+          git add CHANGELOG.md
+          git commit -m "Update changelog" || echo "No changes"
+          git push
