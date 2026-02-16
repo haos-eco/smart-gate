@@ -40,7 +40,6 @@ def ensure_dir(p: str):
         os.makedirs(d, exist_ok=True)
 
 def remove_plate_border(img_crop):
-    """Rimuove bordo conservativo per eliminare la cornice della targa"""
     h, w = img_crop.shape[:2]
     margin_h = int(h * 0.18)
     margin_w = int(w * 0.08)
@@ -49,9 +48,6 @@ def remove_plate_border(img_crop):
     return cropped
 
 def fix_common_ocr_errors(plate_text):
-    """Corregge errori comuni OCR basati sul formato italiano AA123AA"""
-
-    # Correzioni per posizioni LETTERE
     letter_fixes = {
         '0': 'O',
         '1': 'I',
@@ -59,7 +55,6 @@ def fix_common_ocr_errors(plate_text):
         '8': 'B',
     }
 
-    # Correzioni per posizioni NUMERI
     number_fixes = {
         'O': '0',
         'I': '1',
@@ -68,21 +63,21 @@ def fix_common_ocr_errors(plate_text):
         'B': '8',
     }
 
-    # Formato italiano: AA123AA
+    # It format: AA123AA
     if len(plate_text) == 7:
         result = list(plate_text)
 
-        # Posizioni 0,1 devono essere lettere
+        # 0,1 positions should be letters
         for i in [0, 1]:
             if result[i].isdigit() and result[i] in letter_fixes:
                 result[i] = letter_fixes[result[i]]
 
-        # Posizioni 2,3,4 devono essere numeri
+        # 2,3,4 positions should be numeric
         for i in [2, 3, 4]:
             if result[i].isalpha() and result[i] in number_fixes:
                 result[i] = number_fixes[result[i]]
 
-        # Posizioni 5,6 devono essere lettere
+        # 5,6 positions should be letters
         for i in [5, 6]:
             if result[i].isdigit() and result[i] in letter_fixes:
                 result[i] = letter_fixes[result[i]]
@@ -95,7 +90,7 @@ def ocr_plate(reader, img_bgr, debug=False):
     """OCR con EasyOCR"""
     h, w = img_bgr.shape[:2]
 
-    # Upscale se necessario
+    # Upscale if necessary
     if h < 200:
         scale = 200 / h
         img_bgr = cv2.resize(img_bgr, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
@@ -109,7 +104,6 @@ def ocr_plate(reader, img_bgr, debug=False):
             text_clean = re.sub(r"[^A-Z0-9]", "", text.upper())
             print(f"  '{text}' -> '{text_clean}' (confidence: {confidence:.3f})")
 
-    # Prendi il più lungo con confidence > 0.5
     valid_results = [(re.sub(r"[^A-Z0-9]", "", text.upper()), conf)
                      for _, text, conf in results if conf > 0.5]
 
@@ -212,15 +206,39 @@ def main():
     allowed = {p.strip().upper() for p in opt.get("allowed_plates", [])}
     conf = float(opt.get("confidence", 0.35))
     cooldown = int(opt.get("cooldown_sec", 30))
-    model_rel = opt.get("yolo_model", "plates_model.onnx")
+    model_path = opt.get("model_path", "/config/www/smart_gate/model.onnx")
     snapshot_path = opt["snapshot_path"]
     history_dir = opt.get("history_dir", "/config/www/smart-gate/history")
     keep_history = bool(opt.get("keep_history", False))
     debug = bool(opt.get("debug", False))
 
-    model_path = os.path.join("/data", model_rel) if os.path.exists(os.path.join("/data", model_rel)) else os.path.join("/app", model_rel)
+    # check if model exists
     if not os.path.exists(model_path):
-        model_path = f"/app/{model_rel}"
+        print(f"❌ ERROR: ONNX model not found at: {model_path}")
+        print(f"")
+        print(f"Please download a YOLOv11 license plate detection model and place it at:")
+        print(f"  {model_path}")
+        print(f"")
+        print(f"Recommended model:")
+        print(f"  https://huggingface.co/morsetechlab/yolov11-license-plate-detection/resolve/main/best.onnx")
+        print(f"")
+        print(f"Instructions:")
+        print(f"  1. Create folder: /config/www/smart_gate/")
+        print(f"  2. Download and rename model to: model.onnx")
+        print(f"  3. Upload to the folder above")
+        print(f"  4. Restart this addon")
+        return
+
+    # check on model size if too small
+    file_size = os.path.getsize(model_path) / (1024 * 1024)  # MB
+    if file_size < 10:
+        print(f"⚠️  WARNING: Model file is only {file_size:.1f}MB")
+        print(f"   This seems too small for a YOLO model (expected ~200MB)")
+        print(f"   The file might be corrupted or a Git LFS pointer.")
+        print(f"   Please re-download the model.")
+        return
+
+    print(f"✅ Model found: {model_path} ({file_size:.1f}MB)")
 
     print("Loading YOLO model...")
     sess, inp, out = load_onnx_model(model_path)
@@ -262,7 +280,7 @@ def main():
             ensure_dir(snapshot_path)
             camera_snapshot(camera_entity, snapshot_path)
 
-            # 2) Carica immagine
+            # 2) Load snapshot
             img = cv2.imread(snapshot_path)
             if img is None:
                 time.sleep(1)
@@ -288,7 +306,6 @@ def main():
                 time.sleep(1)
                 continue
 
-            # Prendi box con conf più alta
             boxes.sort(key=lambda b: b[4], reverse=True)
             x1, y1, x2, y2, score = boxes[0]
             plate_crop = img_roi[max(0,y1):max(0,y2), max(0,x1):max(0,x2)]
@@ -297,7 +314,6 @@ def main():
                 time.sleep(1)
                 continue
 
-            # Rimuovi bordi della targa
             plate_crop = remove_plate_border(plate_crop)
 
             if debug:
@@ -310,13 +326,13 @@ def main():
             plate = ocr_plate(reader, plate_crop, debug=debug)
             print("Detected:", plate, "score:", score)
 
-            # 5) Salva history se richiesto
+            # 5) Save history if enabled
             if keep_history:
                 os.makedirs(history_dir, exist_ok=True)
                 ts = time.strftime("%Y%m%d_%H%M%S")
                 cv2.imwrite(os.path.join(history_dir, f"{ts}_{plate or 'NONE'}.jpg"), img)
 
-            # 6) Match whitelist -> apri cancello
+            # 6) Match whitelist -> open gate
             if plate and plate in allowed:
                 switch_on(gate_switch)
                 last_open = now

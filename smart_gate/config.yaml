@@ -1,9 +1,8 @@
 name: Smart Gate
-version: 1.0.0
+version: 1.0.1
 slug: smart_gate
 panel_icon: mdi:gate
-description: >-
-  plates recognition for automatic gate opening, smart notification, using Reolink Camera, YOLO and OCR
+description: Automatic license plate recognition gate opener with smart notifications
 arch:
   - amd64
   - aarch64
@@ -21,9 +20,9 @@ options:
   gate_switch: switch.cancello
   cooldown_sec: 120
   allowed_plates:
-  snapshot_path: /config/www/smart-gate/latest-snapshot.jpg
+  snapshot_path: /config/www/smart_gate/latest-snapshot.jpg
   roi: "0.0,0.0,1.0,1.0"
-  yolo_model: plates_model.onnx
+  model_path: /config/www/smart_gate/model.onnx
   confidence: 0.5
   history_dir: /config/www/smart-gate/history
   keep_history: false
@@ -36,7 +35,7 @@ schema:
   allowed_plates: [str]
   snapshot_path: str
   roi: str
-  yolo_model: str
+  model_path: str
   confidence: float
   history_dir: str
   keep_history: bool
