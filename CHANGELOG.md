@@ -7,12 +7,14 @@ All notable changes to this project will be documented in this file.
 ### 📚 Documentation
 
 - Update changelog [skip ci]
+- Update changelog [skip ci]
 
 ### ⚙️ Miscellaneous Tasks
 
 - Delete build.yaml, add git repo url to config.yaml
 - Remove subfolder smart_gate
 - Add attributions in README, add GNU LICENSE
+- Bump version to 1.0.3
 
 ## [1.0.1] - 2026-02-17
 
