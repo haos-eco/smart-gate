@@ -28,7 +28,6 @@ def ha_call(service: str, data: dict):
     return r.json()
 
 def camera_snapshot(camera_entity: str, path: str):
-    # camera.snapshot service
     ha_call("camera.snapshot", {"entity_id": camera_entity, "filename": path})
 
 def switch_on(entity_id: str):
@@ -43,9 +42,19 @@ def remove_plate_border(img_crop):
     h, w = img_crop.shape[:2]
     margin_h = int(h * 0.18)
     margin_w = int(w * 0.08)
-
     cropped = img_crop[margin_h:h-margin_h, margin_w:w-margin_w]
     return cropped
+
+def fix_overexposure(img_bgr):
+    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
+    # CLAHE (Contrast Limited Adaptive Histogram Equalization)
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    l = clahe.apply(l)
+    lab = cv2.merge([l, a, b])
+    result = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+    return result
 
 def fix_common_ocr_errors(plate_text):
     letter_fixes = {
@@ -87,7 +96,6 @@ def fix_common_ocr_errors(plate_text):
     return plate_text
 
 def ocr_plate(reader, img_bgr, debug=False):
-    """OCR con EasyOCR"""
     h, w = img_bgr.shape[:2]
 
     # Upscale if necessary
@@ -95,7 +103,6 @@ def ocr_plate(reader, img_bgr, debug=False):
         scale = 200 / h
         img_bgr = cv2.resize(img_bgr, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
 
-    # EasyOCR
     results = reader.readtext(img_bgr, allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
 
     if debug:
@@ -121,16 +128,13 @@ def ocr_plate(reader, img_bgr, debug=False):
 
 def load_onnx_model(model_path: str):
     import onnxruntime as ort
+    print(f"onnxruntime version: {ort.__version__}")
     sess = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
     inp = sess.get_inputs()[0].name
     out = sess.get_outputs()[0].name
     return sess, inp, out
 
 def yolo_onnx_detect(sess, inp_name, out_name, img_bgr, conf=0.35, debug=False):
-    """
-    YOLOv11 detection.
-    Output format: (1, 5, 8400) -> [x_center, y_center, width, height, confidence]
-    """
     h0, w0 = img_bgr.shape[:2]
     size = 640
 
@@ -142,12 +146,8 @@ def yolo_onnx_detect(sess, inp_name, out_name, img_bgr, conf=0.35, debug=False):
 
     # Inference
     pred = sess.run([out_name], {inp_name: img})[0]
-
-    # YOLOv11: (1, 5, 8400) -> remove batch -> (5, 8400)
-    pred = pred.squeeze()  # (5, 8400)
-
-    # Transpose to (8400, 5)
-    pred = pred.T  # (8400, 5)
+    pred = pred.squeeze()
+    pred = pred.T
 
     boxes = []
 
@@ -162,7 +162,6 @@ def yolo_onnx_detect(sess, inp_name, out_name, img_bgr, conf=0.35, debug=False):
         if confidence < conf:
             continue
 
-        # Converti da center format a corner format
         x1 = int((cx - w/2) / size * w0)
         y1 = int((cy - h/2) / size * h0)
         x2 = int((cx + w/2) / size * w0)
@@ -259,7 +258,7 @@ def main():
     last_open = 0.0
     last_motion = ""
 
-    print("LPR Gate started. Watching motion:", motion_entity)
+    print("Smart Gate started. Watching motion:", motion_entity)
     if debug:
         print(f"DEBUG mode enabled")
         print(f"DEBUG - Confidence threshold: {conf}")
@@ -325,6 +324,7 @@ def main():
                 continue
 
             plate_crop = remove_plate_border(plate_crop)
+            plate_crop = fix_overexposure(plate_crop)
 
             if debug:
                 print(f"Selected box: size={plate_crop.shape[1]}x{plate_crop.shape[0]}")
