@@ -84,3 +84,26 @@ confidence: 0.5
 - Lower confidence threshold (try 0.3)
 - Check camera image quality
 - Test with daytime images first
+
+
+## Credits & Attribution
+
+This addon uses the following open source components:
+
+### YOLOv11 License Plate Detection Model
+- **Model**: [yolov11-license-plate-detection](https://huggingface.co/morsetechlab/yolov11-license-plate-detection)
+- **Author**: [MorseTechLab](https://huggingface.co/morsetechlab)
+- **Base Framework**: [Ultralytics YOLOv11](https://github.com/ultralytics/ultralytics)
+- **Training Platform**: [Roboflow](https://roboflow.com)
+- **License**: GNU AGPLv3
+
+### Libraries
+- [EasyOCR](https://github.com/JaidedAI/EasyOCR) - Apache License 2.0
+- [OpenCV](https://opencv.org) - Apache License 2.0
+- [ONNX Runtime](https://onnxruntime.ai) - MIT License
+
+## License
+
+This project is licensed under **GNU AGPLv3** (inherited from the YOLO model dependency).
+
+See [LICENSE](LICENSE) file for details.
