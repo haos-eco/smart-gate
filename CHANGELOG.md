@@ -17,10 +17,12 @@ All notable changes to this project will be documented in this file.
 - Update changelog [skip ci]
 - Update changelog [skip ci]
 - Update changelog [skip ci]
+- Update changelog [skip ci]
 
 ### ⚙️ Miscellaneous Tasks
 
 - Update README
+- Bump version to 1.0.5
 
 ## [1.0.4] - 2026-02-17
 
