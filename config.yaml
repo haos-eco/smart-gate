@@ -2,7 +2,7 @@ name: Smart Gate
 version: 1.0.3
 slug: smart_gate
 description: Automatic license plate recognition gate opener with smart notifications
-url: https://github.com/andreaemmanuele/haos_smartgate
+url: https://github.com/haos-eco/smart-gate
 arch:
   - amd64
   - aarch64
