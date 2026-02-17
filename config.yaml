@@ -20,11 +20,11 @@ options:
   gate_switch: switch.cancello
   cooldown_sec: 120
   allowed_plates:
-  snapshot_path: /config/www/smart_gate/latest-snapshot.jpg
   roi: "0.0,0.0,1.0,1.0"
-  model_path: /config/www/smart_gate/model.onnx
   confidence: 0.5
-  history_dir: /config/www/smart-gate/history
+  model_path: /config/www/smart_gate/model.onnx
+  snapshot_path: /config/www/smart_gate/snapshot/latest.jpg
+  history_dir: /config/www/smart_gate/snapshot/history
   keep_history: false
   debug: false
 schema:
@@ -33,10 +33,10 @@ schema:
   gate_switch: str
   cooldown_sec: int
   allowed_plates: [str]
-  snapshot_path: str
   roi: str
-  model_path: str
   confidence: float
+  model_path: str
+  snapshot_path: str
   history_dir: str
   keep_history: bool
   debug: bool
