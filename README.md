@@ -69,10 +69,17 @@ Click **Start** and check the logs!
 motion_entity: binary_sensor.gate_motion
 camera_entity: camera.gate_camera
 gate_switch: switch.gate_relay
-model_path: /config/www/smart_gate/model.onnx
-allowed_plates:
+allowed_plates: // it will be empty, adds plates in app config
   - AB123CD
+roi: "0.0,0.0,1.0,1.0"
 confidence: 0.5
+cooldown_sec: 120
+model_path: /config/www/smart_gate/model.onnx
+snapshot_path: /config/www/smart_gate/snapshot/latest.jpg
+history_dir: /config/www/smart_gate/snapshot/history
+debug_path: /config/www/smart_gate/snapshot/last_plate_crop.jpg
+keep_history: false
+debug: false
 ```
 
 ## Troubleshooting
