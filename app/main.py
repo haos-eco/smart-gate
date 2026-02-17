@@ -207,8 +207,9 @@ def main():
     conf = float(opt.get("confidence", 0.35))
     cooldown = int(opt.get("cooldown_sec", 30))
     model_path = opt.get("model_path", "/config/www/smart_gate/model.onnx")
-    snapshot_path = opt["snapshot_path"]
-    history_dir = opt.get("history_dir", "/config/www/smart-gate/history")
+    snapshot_path = opt.get("snapshot_path", "/config/www/smart_gate/snapshot/latest.jpg")
+    history_dir = opt.get("history_dir", "/config/www/smart_gate/snapshot/history")
+    debug_path = opt.get("debug_path", "/config/www/smart_gate/snapshot/last_plate_crop.jpg")
     keep_history = bool(opt.get("keep_history", False))
     debug = bool(opt.get("debug", False))
 
@@ -327,7 +328,6 @@ def main():
 
             if debug:
                 print(f"Selected box: size={plate_crop.shape[1]}x{plate_crop.shape[0]}")
-                debug_path = "/config/www/lpr/last_plate_crop.jpg"
                 cv2.imwrite(debug_path, plate_crop)
                 print(f"Plate crop saved to {debug_path}")
 
