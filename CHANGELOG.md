@@ -4,8 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### ⚙️ Miscellaneous Tasks
+
+- *(README)* Updated references to github repo, added author
+
+## [1.0.3] - 2026-02-17
+
 ### 📚 Documentation
 
+- Update changelog [skip ci]
 - Update changelog [skip ci]
 - Update changelog [skip ci]
 - Update changelog [skip ci]
