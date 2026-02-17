@@ -38,12 +38,17 @@ def ensure_dir(p: str):
     if d:
         os.makedirs(d, exist_ok=True)
 
+def is_infrared(img_bgr):
+    hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    mean_saturation = np.mean(hsv[:, :, 1])
+    is_ir = mean_saturation < 20
+    return is_ir, mean_saturation
+
 def remove_plate_border(img_crop):
     h, w = img_crop.shape[:2]
     margin_h = int(h * 0.18)
     margin_w = int(w * 0.08)
-    cropped = img_crop[margin_h:h-margin_h, margin_w:w-margin_w]
-    return cropped
+    return img_crop[margin_h:h-margin_h, margin_w:w-margin_w]
 
 def fix_overexposure(img_bgr):
     lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
@@ -53,26 +58,53 @@ def fix_overexposure(img_bgr):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     l = clahe.apply(l)
     lab = cv2.merge([l, a, b])
-    result = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
-    return result
+    return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+
+def crop_white_area(img_bgr):
+    hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+
+    lower_white = np.array([0, 0, 180])
+    upper_white = np.array([180, 50, 255])
+    mask = cv2.inRange(hsv, lower_white, upper_white)
+
+    col_sums = np.sum(mask, axis=0)
+    threshold = img_bgr.shape[0] * 0.3 * 255
+
+    white_cols = np.where(col_sums > threshold)[0]
+
+    if len(white_cols) > 0:
+        x_start = white_cols[0]
+        x_end = white_cols[-1]
+        return img_bgr[:, x_start:x_end]
+
+    return img_bgr
+
+def extract_plate_pattern(text):
+    """Estrae pattern AA123AA da stringhe più lunghe"""
+    if len(text) == 7:
+        if text[0:2].isalpha() and text[2:5].isdigit() and text[5:7].isalpha():
+            return text
+
+    match = re.search(r'[A-Z]{2}\d{3}[A-Z]{2}', text)
+    if match:
+        return match.group()
+
+    if len(text) == 8:
+        candidate = text[1:]
+        if candidate[0:2].isalpha() and candidate[2:5].isdigit() and candidate[5:7].isalpha():
+            return candidate
+
+        candidate = text[:-1]
+        if candidate[0:2].isalpha() and candidate[2:5].isdigit() and candidate[5:7].isalpha():
+            return candidate
+
+    return text
 
 def fix_common_ocr_errors(plate_text):
-    letter_fixes = {
-        '0': 'O',
-        '1': 'I',
-        '4': 'A',
-        '8': 'B',
-    }
+    letter_fixes = {'0': 'O', '1': 'I', '4': 'A', '8': 'B'}
+    number_fixes = {'O': '0', 'I': '1', 'Z': '4', 'S': '5', 'B': '8'}
 
-    number_fixes = {
-        'O': '0',
-        'I': '1',
-        'Z': '4',
-        'S': '5',
-        'B': '8',
-    }
-
-    # It format: AA123AA
+    # IT format: AA123AA
     if len(plate_text) == 7:
         result = list(plate_text)
 
@@ -96,12 +128,23 @@ def fix_common_ocr_errors(plate_text):
     return plate_text
 
 def ocr_plate(reader, img_bgr, debug=False):
+    img_bgr = crop_white_area(img_bgr)
     h, w = img_bgr.shape[:2]
 
     # Upscale if necessary
-    if h < 200:
-        scale = 200 / h
-        img_bgr = cv2.resize(img_bgr, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+    target_h = 400
+    if h < target_h:
+        scale = target_h / h
+        img_bgr = cv2.resize(img_bgr, None, fx=scale, fy=scale,
+                             interpolation=cv2.INTER_LANCZOS4)
+        if debug:
+            print(f"Upscaled to: {img_bgr.shape[1]}x{img_bgr.shape[0]}")
+
+    # Sharpening
+    kernel_sharpen = np.array([[-1,-1,-1],
+                               [-1, 9,-1],
+                               [-1,-1,-1]])
+    img_bgr = cv2.filter2D(img_bgr, -1, kernel_sharpen)
 
     results = reader.readtext(img_bgr, allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
 
@@ -117,10 +160,11 @@ def ocr_plate(reader, img_bgr, debug=False):
     if valid_results:
         valid_results.sort(key=lambda x: len(x[0]), reverse=True)
         best = valid_results[0][0]
-        best_fixed = fix_common_ocr_errors(best)
+        best_extracted = extract_plate_pattern(best)
+        best_fixed = fix_common_ocr_errors(best_extracted)
 
         if debug:
-            print(f"Best OCR result: '{best}' -> after fixes: '{best_fixed}'")
+            print(f"Best OCR: '{best}' -> extracted: '{best_extracted}' -> fixed: '{best_fixed}'")
 
         return best_fixed
 
@@ -153,7 +197,6 @@ def yolo_onnx_detect(sess, inp_name, out_name, img_bgr, conf=0.35, debug=False):
 
     for detection in pred:
         cx, cy, w, h, confidence = detection
-
         confidence = float(confidence)
 
         if confidence > 1:
@@ -208,7 +251,7 @@ def main():
     model_path = opt.get("model_path", "/config/www/smart_gate/model.onnx")
     snapshot_path = opt.get("snapshot_path", "/config/www/smart_gate/snapshot/latest.jpg")
     history_dir = opt.get("history_dir", "/config/www/smart_gate/snapshot/history")
-    debug_path = opt.get("debug_path", "/config/www/smart_gate/snapshot/last_plate_crop.jpg")
+    debug_crop_path = opt.get("debug_path", "/config/www/smart_gate/snapshot/debug/last_plate_crop.jpg")
     keep_history = bool(opt.get("keep_history", False))
     debug = bool(opt.get("debug", False))
 
@@ -232,14 +275,14 @@ def main():
         print(f"  https://huggingface.co/morsetechlab/yolov11-license-plate-detection/resolve/main/best.onnx")
         print(f"")
         print(f"Instructions:")
-        print(f"  1. Create folder: /config/www/smart_gate/")
+        print(f"  1. Create folder: /config/www/smart_gate/ or it will be created for you")
         print(f"  2. Download and rename model to: model.onnx")
         print(f"  3. Upload to the folder above")
         print(f"  4. Restart this addon")
         return
 
     # check on model size if too small
-    file_size = os.path.getsize(model_path) / (1024 * 1024)  # MB
+    file_size = os.path.getsize(model_path) / (1024 * 1024)
     if file_size < 10:
         print(f"⚠️  WARNING: Model file is only {file_size:.1f}MB")
         print(f"   This seems too small for a YOLO model (expected ~200MB)")
@@ -324,12 +367,21 @@ def main():
                 continue
 
             plate_crop = remove_plate_border(plate_crop)
-            plate_crop = fix_overexposure(plate_crop)
+            ir_detected, saturation = is_infrared(plate_crop)
+
+            if ir_detected:
+                plate_crop = fix_overexposure(plate_crop)
+                if debug:
+                    print(f"IR mode detected (saturation: {saturation:.1f}) - applying exposure fix")
+            else:
+                if debug:
+                    print(f"Normal mode (saturation: {saturation:.1f}) - skipping exposure fix")
 
             if debug:
                 print(f"Selected box: size={plate_crop.shape[1]}x{plate_crop.shape[0]}")
-                cv2.imwrite(debug_path, plate_crop)
-                print(f"Plate crop saved to {debug_path}")
+                ensure_dir(debug_crop_path)
+                cv2.imwrite(debug_crop_path, plate_crop)
+                print(f"Plate crop saved to {debug_crop_path}")
 
             # 4) OCR
             plate = ocr_plate(reader, plate_crop, debug=debug)
