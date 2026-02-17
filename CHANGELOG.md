@@ -4,9 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🐛 Bug Fixes
+
+- *(config.yaml)* Paths
+- Added debug_path in config.yaml and main.py, removed useless comments
+
+### 📚 Documentation
+
+- Update changelog [skip ci]
+
 ### ⚙️ Miscellaneous Tasks
 
 - *(README)* Updated references to github repo, added author
+- Bump version to 1.0.4
 
 ## [1.0.3] - 2026-02-17
 
