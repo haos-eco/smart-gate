@@ -8,8 +8,13 @@ All notable changes to this project will be documented in this file.
 
 - Trying to resolve sovraexposure for plates
 
+### 🐛 Bug Fixes
+
+- Enhance plate reading, add fix sovraexposure for night mode
+
 ### 📚 Documentation
 
+- Update changelog [skip ci]
 - Update changelog [skip ci]
 - Update changelog [skip ci]
 
