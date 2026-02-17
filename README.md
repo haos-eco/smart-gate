@@ -2,19 +2,20 @@
 
 Automatic gate opener using YOLO + EasyOCR for license plate recognition.
 
+**Author**: [haz3](https://github.com/andreaemmanuele)
+
 ![Supports aarch64 Architecture][aarch64-shield]
 ![Supports amd64 Architecture][amd64-shield]
 
 [aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
 [amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
 
-
 ## Installation
 
 ### Step 1: Add Repository
 
 1. Go to **Settings → Add-ons → Add-on Store → Three dots → Repositories**
-2. Add: `https://github.com/andreaemmanuele/haos_smartgate`
+2. Add: `https://github.com/haos-eco/smart-gate`
 
 ### Step 2: Install Add-on
 
