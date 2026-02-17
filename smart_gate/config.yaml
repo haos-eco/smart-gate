@@ -1,8 +1,9 @@
 name: Smart Gate
-version: 1.0.1
+version: 1.0.2
 slug: smart_gate
 panel_icon: mdi:gate
 description: Automatic license plate recognition gate opener with smart notifications
+url: https://github.com/andreaemmanuele/haos_smartgate
 arch:
   - amd64
   - aarch64
