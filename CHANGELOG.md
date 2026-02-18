@@ -4,9 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🚀 Features
+
+- Enhance plate resolution using ai model
+
 ### 🐛 Bug Fixes
 
 - Model path, readme
+- Removing destructive post processing
+
+### 📚 Documentation
+
+- Update changelog [skip ci]
+
+### ⚙️ Miscellaneous Tasks
+
+- Bump to major version 1.1.0, add DOCS, update README
 
 ## [.1.0.6] - 2026-02-18
 
