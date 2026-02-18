@@ -1,4 +1,4 @@
-<img src="./logo.png" alt="Smart Gate" />
+<img src="https://raw.githubusercontent.com/haos-eco/smart-gate/main/logo.png" alt="Smart Gate" />
 
 # Smart Gate - License Plate Recognition
 
