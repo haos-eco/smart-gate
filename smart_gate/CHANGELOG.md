@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - Logo in readme and docs
 - Github action update changelog
+- Logo in readme and docs
 
 ### 🚜 Refactor
 
@@ -15,6 +16,7 @@ All notable changes to this project will be documented in this file.
 
 ### 📚 Documentation
 
+- Update changelog [skip ci]
 - Update changelog [skip ci]
 
 ## [1.1.0] - 2026-02-18
