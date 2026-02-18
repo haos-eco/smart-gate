@@ -28,13 +28,13 @@ def test_load_model():
 
         mock_session_class.return_value = mock_sess
 
-        sess, inp, out = load_model('../model.onnx')
+        sess, inp, out = load_model('../models/yolo/model.onnx')
 
         assert inp == 'images'
         assert out == 'output0'
         assert sess == mock_sess
         mock_session_class.assert_called_once_with(
-            '../model.onnx',
+            '../models/yolo/model.onnx',
             providers=["CPUExecutionProvider"]
         )
 

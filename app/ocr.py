@@ -1,6 +1,5 @@
 import re
 import cv2
-import numpy as np
 
 def extract_plate_pattern(text):
     """Extract AA123AA pattern from longer strings"""
@@ -53,34 +52,11 @@ def fix_common_ocr_errors(plate_text):
     return ''.join(result)
 
 def ocr_plate(reader, img_bgr, debug=False):
-    """Perform OCR on plate crop"""
-    from image_processing import crop_white_area
+    from image_processing import crop_white_area, enhance_plate_ai_sr
 
     # Crop white area (remove EU strip)
     img_bgr = crop_white_area(img_bgr)
-    h, w = img_bgr.shape[:2]
-
-    # Aggressive upscaling
-    target_h = 400
-    if h < target_h:
-        scale = target_h / h
-        img_bgr = cv2.resize(
-            img_bgr, None,
-            fx=scale, fy=scale,
-            interpolation=cv2.INTER_LANCZOS4
-        )
-        if debug:
-            print(f"Upscaled to: {img_bgr.shape[1]}x{img_bgr.shape[0]}")
-
-    # Sharpening
-    kernel_sharpen = np.array([
-        [-1, -1, -1],
-        [-1,  9, -1],
-        [-1, -1, -1]
-    ])
-    img_bgr = cv2.filter2D(img_bgr, -1, kernel_sharpen)
-
-    # EasyOCR
+    img_bgr = enhance_plate_ai_sr(img_bgr, debug=debug)
     results = reader.readtext(
         img_bgr,
         allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'

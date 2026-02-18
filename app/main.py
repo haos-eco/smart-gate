@@ -1,17 +1,11 @@
+from collections import Counter
 import os
 import time
 import cv2
 
-from utils import get_options, ensure_dir
+from utils import get_options, capture_and_recognize
 from homeassistant import get_state, camera_snapshot, switch_on
-from image_processing import (
-    apply_roi,
-    is_infrared,
-    remove_plate_border,
-    fix_overexposure
-)
-from ocr import ocr_plate
-from detection import load_model, detect_plates
+from detection import load_model
 
 def validate_model(model_path: str) -> bool:
     """Validate model file exists and has correct size"""
@@ -49,11 +43,9 @@ def main():
     keep_history = bool(opt.get("keep_history", False))
     debug = bool(opt.get("debug", False))
 
-    # Validate model
     if not validate_model(model_path):
         return
 
-    # Load models
     print("Loading YOLO model...")
     sess, inp, out = load_model(model_path)
 
@@ -90,75 +82,57 @@ def main():
                 time.sleep(0.5)
                 continue
 
-            print("Motion detected! Capturing snapshot...")
+            print("Motion detected! Multi-attempt recognition...")
 
-            # Capture and load image
-            ensure_dir(snapshot_path)
-            camera_snapshot(camera_entity, snapshot_path)
+            # Multi-attempt: 3 captures with 0.5s pause
+            attempts = []
+            for i in range(3):
+                plate, score = capture_and_recognize(
+                    camera_entity, snapshot_path, sess, inp, out,
+                    reader, roi, conf, debug
+                )
 
-            img = cv2.imread(snapshot_path)
-            if img is None:
+                if plate:
+                    attempts.append(plate)
+                    print(f"  Attempt {i+1}/3: '{plate}' (YOLO score: {score:.3f})")
+                else:
+                    print(f"  Attempt {i+1}/3: No plate detected")
+
+                if i < 2:  # Don't wait after last attempt
+                    time.sleep(0.5)
+
+            if not attempts:
+                print("❌ No plates detected in any attempt")
                 time.sleep(1)
                 continue
 
-            img_roi = apply_roi(img, roi)
+            # Consensus: require 2/3 agreement
+            plate_counts = Counter(attempts)
+            most_common = plate_counts.most_common(1)[0]
+            plate, count = most_common
 
-            if debug:
-                print(f"DEBUG - Image: {img.shape[1]}x{img.shape[0]}, ROI: {img_roi.shape[1]}x{img_roi.shape[0]}")
+            print(f"📊 Consensus: '{plate}' ({count}/{len(attempts)} attempts)")
 
-            # YOLO detection
-            print(f"Running YOLO (conf={conf})...")
-            boxes = detect_plates(sess, inp, out, img_roi, conf=conf, debug=debug)
-            print(f"YOLO found {len(boxes)} boxes")
-
-            if debug and boxes:
-                for i, (x1, y1, x2, y2, s) in enumerate(boxes[:3]):
-                    print(f"  Box {i}: score={s:.2f}, size={x2-x1}x{y2-y1}")
-
-            if not boxes:
-                print("No plates detected")
+            # Security: require at least 2/3 consensus
+            if count < 2:
+                print(f"⚠️  No consensus (need 2/3), gate stays closed")
                 time.sleep(1)
                 continue
 
-            # Get best box
-            boxes.sort(key=lambda b: b[4], reverse=True)
-            x1, y1, x2, y2, score = boxes[0]
-            plate_crop = img_roi[max(0, y1):max(0, y2), max(0, x1):max(0, x2)]
-
-            if plate_crop.size == 0:
-                time.sleep(1)
-                continue
-
-            # Preprocessing
-            plate_crop = remove_plate_border(plate_crop)
-
-            ir_detected, saturation = is_infrared(plate_crop)
-            if ir_detected:
-                plate_crop = fix_overexposure(plate_crop)
-                if debug:
-                    print(f"IR detected (sat={saturation:.1f}) - fixing exposure")
-
-            if debug:
-                ensure_dir(debug_crop_path)
-                cv2.imwrite(debug_crop_path, plate_crop)
-                print(f"Crop saved: {debug_crop_path}")
-
-            # OCR
-            plate = ocr_plate(reader, plate_crop, debug=debug)
-            print(f"Detected: {plate} (score: {score:.3f})")
-
-            # Save history
+            # Save history if enabled
             if keep_history:
                 os.makedirs(history_dir, exist_ok=True)
                 ts = time.strftime("%Y%m%d_%H%M%S")
-                cv2.imwrite(os.path.join(history_dir, f"{ts}_{plate or 'NONE'}.jpg"), img)
+                img = cv2.imread(snapshot_path)
+                if img is not None:
+                    cv2.imwrite(os.path.join(history_dir, f"{ts}_{plate}.jpg"), img)
 
-            # Check whitelist and open gate
-            if plate and plate in allowed:
+            # Exact match on whitelist
+            if plate in allowed:
                 switch_on(gate_switch)
                 last_open = now
                 print(f"✅ Gate opened for: {plate}")
-            elif debug and plate:
+            elif debug:
                 print(f"❌ Plate '{plate}' not in whitelist")
 
             time.sleep(2)

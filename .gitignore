@@ -1,3 +1,6 @@
 .idea
 .venv
-*.onnx
+
+app/models/**/*
+app/tests/fixtures/plates/*
+!app/tests/fixtures/plates/README.md

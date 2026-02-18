@@ -1,5 +1,137 @@
 import cv2
 import numpy as np
+import os
+import urllib.request
+
+_SR_MODEL_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "models",
+    "ai",
+    "EDSR_x2.pb"
+)
+
+_SR_MODEL = None
+
+def download_sr_model():
+    """Download AI super-resolution model if not present"""
+    model_dir = os.path.dirname(_SR_MODEL_PATH)
+
+    try:
+        os.makedirs(model_dir, exist_ok=True)
+    except OSError as e:
+        print(f"⚠️  Cannot create model directory {model_dir}: {e}")
+        return False
+
+    if os.path.exists(_SR_MODEL_PATH):
+        return True
+
+    print(f"📥 Downloading AI super-resolution model...")
+    print(f"   Destination: {_SR_MODEL_PATH}")
+
+    # URL validi testati (in ordine di preferenza)
+    models = [
+        {
+            "name": "EDSR_x2.pb",
+            "url": "https://github.com/Saafke/EDSR_Tensorflow/raw/master/models/EDSR_x2.pb",
+            "type": "edsr"
+        },
+        {
+            "name": "FSRCNN_x2.pb",
+            "url": "https://github.com/Saafke/FSRCNN_Tensorflow/raw/master/models/FSRCNN_x2.pb",
+            "type": "fsrcnn"
+        },
+        {
+            "name": "LapSRN_x2.pb",
+            "url": "https://github.com/fannymonori/TF-LapSRN/raw/master/export/LapSRN_x2.pb",
+            "type": "lapsrn"
+        }
+    ]
+
+    for model_info in models:
+        try:
+            print(f"   Trying {model_info['name']}...")
+
+            # Download con progress
+            def show_progress(block_num, block_size, total_size):
+                downloaded = block_num * block_size
+                percent = min(downloaded * 100 / total_size, 100)
+                print(f"\r   Progress: {percent:.1f}%", end='', flush=True)
+
+            urllib.request.urlretrieve(
+                model_info['url'],
+                _SR_MODEL_PATH,
+                reporthook=show_progress
+            )
+            print()  # Newline after progress
+
+            # Verifica che il file sia valido (> 100KB)
+            size_mb = os.path.getsize(_SR_MODEL_PATH) / (1024 * 1024)
+            if size_mb < 0.1:
+                print(f"   ❌ File too small ({size_mb:.2f}MB), trying next...")
+                os.remove(_SR_MODEL_PATH)
+                continue
+
+            print(f"   ✅ Downloaded successfully ({size_mb:.2f}MB)")
+
+            # Salva il tipo di modello in un file
+            model_type_file = _SR_MODEL_PATH.replace('.pb', '.type')
+            with open(model_type_file, 'w') as f:
+                f.write(model_info['type'])
+
+            return True
+
+        except Exception as e:
+            print(f"   ❌ Failed: {e}")
+            if os.path.exists(_SR_MODEL_PATH):
+                os.remove(_SR_MODEL_PATH)
+            continue
+
+    print(f"⚠️  Could not download AI SR model from any source")
+    print(f"   Will use bicubic fallback")
+    return False
+
+def get_model_type():
+    """Get the type of downloaded model"""
+    model_type_file = _SR_MODEL_PATH.replace('.pb', '.type')
+    if os.path.exists(model_type_file):
+        with open(model_type_file, 'r') as f:
+            return f.read().strip()
+
+    # Fallback: detect from filename
+    model_name = os.path.basename(_SR_MODEL_PATH)
+    if "EDSR" in model_name:
+        return "edsr"
+    elif "FSRCNN" in model_name:
+        return "fsrcnn"
+    elif "LapSRN" in model_name:
+        return "lapsrn"
+    return "edsr"  # Default
+
+def get_sr_model():
+    """Get or initialize super-resolution model"""
+    global _SR_MODEL
+
+    if _SR_MODEL is not None:
+        return _SR_MODEL
+
+    if not download_sr_model():
+        return None
+
+    try:
+        sr = cv2.dnn_superres.DnnSuperResImpl_create()
+        sr.readModel(_SR_MODEL_PATH)
+
+        model_type = get_model_type()
+        sr.setModel(model_type, 2)  # 2x scale
+
+        _SR_MODEL = sr
+        print(f"✅ AI SR model loaded: {model_type.upper()} (2x)")
+        return _SR_MODEL
+
+    except Exception as e:
+        print(f"⚠️  Failed to load SR model: {e}")
+        print(f"   Will use bicubic fallback")
+        return None
 
 def apply_roi(img_bgr, roi):
     """Apply region of interest to image
@@ -56,5 +188,48 @@ def crop_white_area(img_bgr):
         x_start = white_cols[0]
         x_end = white_cols[-1]
         return img_bgr[:, x_start:x_end]
+
+    return img_bgr
+
+def enhance_plate_ai_sr(img_bgr, debug=False):
+    """Enhance plate using AI super-resolution or bicubic fallback"""
+    h, w = img_bgr.shape[:2]
+
+    # Try AI super-resolution
+    sr = get_sr_model()
+
+    if sr is not None:
+        try:
+            img_bgr = sr.upsample(img_bgr)
+            if debug:
+                print(f"AI SR 2x: {w}x{h} → {img_bgr.shape[1]}x{img_bgr.shape[0]}")
+        except Exception as e:
+            if debug:
+                print(f"AI SR error: {e}, using bicubic")
+            img_bgr = cv2.resize(img_bgr, None, fx=2, fy=2,
+                                 interpolation=cv2.INTER_CUBIC)
+    else:
+        # Fallback: bicubic
+        img_bgr = cv2.resize(img_bgr, None, fx=2, fy=2,
+                             interpolation=cv2.INTER_CUBIC)
+        if debug:
+            print(f"Bicubic 2x: {w}x{h} → {img_bgr.shape[1]}x{img_bgr.shape[0]}")
+
+    # Additional upscale to ~400px
+    h_new, w_new = img_bgr.shape[:2]
+    if h_new < 400:
+        scale = 400 / h_new
+        img_bgr = cv2.resize(img_bgr, None, fx=scale, fy=scale,
+                             interpolation=cv2.INTER_LANCZOS4)
+        if debug:
+            print(f"LANCZOS4: {w_new}x{h_new} → {img_bgr.shape[1]}x{img_bgr.shape[0]}")
+
+    # Sharpening
+    kernel_sharpen = np.array([
+        [-1, -1, -1],
+        [-1,  9, -1],
+        [-1, -1, -1]
+    ])
+    img_bgr = cv2.filter2D(img_bgr, -1, kernel_sharpen)
 
     return img_bgr
