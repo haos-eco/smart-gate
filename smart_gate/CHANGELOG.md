@@ -2,13 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [1.1.1] - 2026-02-18
 
 ### 🐛 Bug Fixes
 
 - Logo in readme and docs
 - Github action update changelog
 - Logo in readme and docs
+- App readme
 
 ### 🚜 Refactor
 
@@ -18,6 +19,11 @@ All notable changes to this project will be documented in this file.
 
 - Update changelog [skip ci]
 - Update changelog [skip ci]
+- Update changelog [skip ci]
+
+### ⚙️ Miscellaneous Tasks
+
+- Update opencv-contrib-python to 4.13.0.92 (latest stable)
 
 ## [1.1.0] - 2026-02-18
 
