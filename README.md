@@ -1,117 +1,34 @@
-# Smart Gate - Automatic License Plate Recognition
+## Development Setup
 
-Automatic gate opener using YOLO + EasyOCR for license plate recognition.
-
-**Author**: [haz3](https://github.com/andreaemmanuele)
-
-![Supports aarch64 Architecture][aarch64-shield]
-![Supports amd64 Architecture][amd64-shield]
-
-[aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
-[amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
-
-## Installation
-
-### Step 1: Add Repository
-
-1. Go to **Settings → Add-ons → Add-on Store → Three dots → Repositories**
-2. Add: `https://github.com/haos-eco/smart-gate`
-
-### Step 2: Install Add-on
-
-Find "Smart Gate" in the store and click **Install**
-
-### Step 3: Download YOLO Model
-
-You need to download a YOLOv11 license plate detection model:
-
-**Option A: Pre-trained model (recommended)**
-1. Download from: https://huggingface.co/morsetechlab/yolov11-license-plate-detection/resolve/main/best.onnx
-2. Rename to `model.onnx`
-
-**Option B: Train your own**
-Train a custom YOLOv11 model on your specific plates/cameras
-
-### Step 4: Upload Model
-
-Upload `model.onnx` to Home Assistant:
-
-**Via File Editor addon:**
-1. Create folder (it should be created automatically): `/config/www/smart_gate/`
-2. Upload `model.onnx` there
-
-**Via Samba/SSH:**
+### 1. Clone repository
 ```bash
-scp model.onnx root@HOMEASSISTANT_IP:/config/www/smart_gate/
+git clone https://github.com/andreaemmanuele/haos_smartgate.git
+cd haos_smartgate
 ```
 
-**Via WebUI:**
-1. Install "File Editor" addon
-2. Create `/config/www/smart_gate/` folder
-3. Upload file
-
-### Step 5: Configure
-
-1. Open Smart Gate addon
-2. Configure:
-    - **Motion sensor**: Binary sensor that triggers on vehicle detection
-    - **Camera entity**: Camera to capture license plates
-    - **Gate switch**: Switch entity to open the gate
-    - **Allowed plates**: List of authorized license plates (format: AB123CD)
-    - **Model path**: `/config/www/smart_gate/model.onnx`
-
-### Step 6: Start
-
-Click **Start** and check the logs!
-
-## Configuration
-```yaml
-motion_entity: binary_sensor.gate_motion
-camera_entity: camera.gate_camera
-gate_switch: switch.gate_relay
-allowed_plates: // it will be empty, adds plates in app config
-  - AB123CD
-roi: "0.0,0.0,1.0,1.0"
-confidence: 0.5
-cooldown_sec: 120
-model_path: /config/www/smart_gate/model.onnx
-snapshot_path: /config/www/smart_gate/snapshot/latest.jpg
-history_dir: /config/www/smart_gate/snapshot/history
-debug_path: /config/www/smart_gate/snapshot/last_plate_crop.jpg
-keep_history: false
-debug: false
+### 2. Install dependencies
+```bash
+pip install -r requirements.txt
+pip install -r requirements-test.txt
 ```
 
-## Troubleshooting
+### 3. Setup Git hooks (IMPORTANT!)
+```bash
+./setup-hooks.sh
+```
 
-**Error: "Model not found"**
-- Verify the file exists at `/config/www/smart_gate/model.onnx`
-- Check file size is ~200MB (not a few KB)
+This configures pre-commit hooks to run tests automatically before each commit.
 
-**No plates detected**
-- Lower confidence threshold (try 0.3)
-- Check camera image quality
-- Test with daytime images first
+### 4. Run tests
+```bash
+pytest -v
+```
 
+## Git Hooks
 
-## Credits & Attribution
+Pre-commit hook runs all tests before allowing a commit.
 
-This addon uses the following open source components:
-
-### YOLOv11 License Plate Detection Model
-- **Model**: [yolov11-license-plate-detection](https://huggingface.co/morsetechlab/yolov11-license-plate-detection)
-- **Author**: [MorseTechLab](https://huggingface.co/morsetechlab)
-- **Base Framework**: [Ultralytics YOLOv11](https://github.com/ultralytics/ultralytics)
-- **Training Platform**: [Roboflow](https://roboflow.com)
-- **License**: GNU AGPLv3
-
-### Libraries
-- [EasyOCR](https://github.com/JaidedAI/EasyOCR) - Apache License 2.0
-- [OpenCV](https://opencv.org) - Apache License 2.0
-- [ONNX Runtime](https://onnxruntime.ai) - MIT License
-
-## License
-
-This project is licensed under **GNU AGPLv3** (inherited from the YOLO model dependency).
-
-See [LICENSE](LICENSE) file for details.
+To skip (not recommended):
+```bash
+git commit --no-verify
+```

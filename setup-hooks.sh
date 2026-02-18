@@ -2,6 +2,8 @@
 
 echo "Setting up Git hooks..."
 
+chmod +x .githooks/*
+
 git config core.hooksPath .githooks
 
 echo "✅ Git hooks installed!"
