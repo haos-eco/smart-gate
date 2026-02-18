@@ -28,7 +28,6 @@ def download_sr_model():
     print(f"📥 Downloading AI super-resolution model...")
     print(f"   Destination: {_SR_MODEL_PATH}")
 
-    # URL validi testati (in ordine di preferenza)
     models = [
         {
             "name": "EDSR_x2.pb",
@@ -39,11 +38,6 @@ def download_sr_model():
             "name": "FSRCNN_x2.pb",
             "url": "https://github.com/Saafke/FSRCNN_Tensorflow/raw/master/models/FSRCNN_x2.pb",
             "type": "fsrcnn"
-        },
-        {
-            "name": "LapSRN_x2.pb",
-            "url": "https://github.com/fannymonori/TF-LapSRN/raw/master/export/LapSRN_x2.pb",
-            "type": "lapsrn"
         }
     ]
 
@@ -51,7 +45,6 @@ def download_sr_model():
         try:
             print(f"   Trying {model_info['name']}...")
 
-            # Download con progress
             def show_progress(block_num, block_size, total_size):
                 downloaded = block_num * block_size
                 percent = min(downloaded * 100 / total_size, 100)
@@ -62,9 +55,8 @@ def download_sr_model():
                 _SR_MODEL_PATH,
                 reporthook=show_progress
             )
-            print()  # Newline after progress
+            print()
 
-            # Verifica che il file sia valido (> 100KB)
             size_mb = os.path.getsize(_SR_MODEL_PATH) / (1024 * 1024)
             if size_mb < 0.1:
                 print(f"   ❌ File too small ({size_mb:.2f}MB), trying next...")
@@ -73,7 +65,6 @@ def download_sr_model():
 
             print(f"   ✅ Downloaded successfully ({size_mb:.2f}MB)")
 
-            # Salva il tipo di modello in un file
             model_type_file = _SR_MODEL_PATH.replace('.pb', '.type')
             with open(model_type_file, 'w') as f:
                 f.write(model_info['type'])
@@ -96,16 +87,7 @@ def get_model_type():
     if os.path.exists(model_type_file):
         with open(model_type_file, 'r') as f:
             return f.read().strip()
-
-    # Fallback: detect from filename
-    model_name = os.path.basename(_SR_MODEL_PATH)
-    if "EDSR" in model_name:
-        return "edsr"
-    elif "FSRCNN" in model_name:
-        return "fsrcnn"
-    elif "LapSRN" in model_name:
-        return "lapsrn"
-    return "edsr"  # Default
+    return "edsr"
 
 def get_sr_model():
     """Get or initialize super-resolution model"""
@@ -140,6 +122,7 @@ def apply_roi(img_bgr, roi):
         img_bgr: BGR image
         roi: [x, y, w, h] in relative floats (0.0 to 1.0)
     """
+
     h, w = img_bgr.shape[:2]
     rx, ry, rw, rh = roi
     x1 = max(0, int(rx * w))
@@ -192,10 +175,9 @@ def crop_white_area(img_bgr):
     return img_bgr
 
 def enhance_plate_ai_sr(img_bgr, debug=False):
-    """Enhance plate using AI super-resolution or bicubic fallback"""
-    h, w = img_bgr.shape[:2]
+    # AI super-resolution with minimal post-processing
 
-    # Try AI super-resolution
+    h, w = img_bgr.shape[:2]
     sr = get_sr_model()
 
     if sr is not None:
@@ -206,30 +188,28 @@ def enhance_plate_ai_sr(img_bgr, debug=False):
         except Exception as e:
             if debug:
                 print(f"AI SR error: {e}, using bicubic")
-            img_bgr = cv2.resize(img_bgr, None, fx=2, fy=2,
-                                 interpolation=cv2.INTER_CUBIC)
+            img_bgr = cv2.resize(img_bgr, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
     else:
-        # Fallback: bicubic
-        img_bgr = cv2.resize(img_bgr, None, fx=2, fy=2,
-                             interpolation=cv2.INTER_CUBIC)
+        img_bgr = cv2.resize(img_bgr, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
         if debug:
             print(f"Bicubic 2x: {w}x{h} → {img_bgr.shape[1]}x{img_bgr.shape[0]}")
 
-    # Additional upscale to ~400px
+    # Upscale to 400px height (if needed)
     h_new, w_new = img_bgr.shape[:2]
     if h_new < 400:
         scale = 400 / h_new
-        img_bgr = cv2.resize(img_bgr, None, fx=scale, fy=scale,
-                             interpolation=cv2.INTER_LANCZOS4)
+        img_bgr = cv2.resize(img_bgr, None, fx=scale, fy=scale, interpolation=cv2.INTER_LANCZOS4)
         if debug:
             print(f"LANCZOS4: {w_new}x{h_new} → {img_bgr.shape[1]}x{img_bgr.shape[0]}")
 
-    # Sharpening
+    # Light sharpening
     kernel_sharpen = np.array([
         [-1, -1, -1],
         [-1,  9, -1],
         [-1, -1, -1]
     ])
     img_bgr = cv2.filter2D(img_bgr, -1, kernel_sharpen)
+    if debug:
+        print("Light sharpening applied")
 
     return img_bgr
