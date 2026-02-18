@@ -1,26 +1,8 @@
-from collections import Counter
 import os
 import time
 import cv2
 
-from utils import get_options, capture_and_recognize
-from homeassistant import get_state, camera_snapshot, switch_on
-from detection import load_model
-
-def validate_model(model_path: str) -> bool:
-    """Validate model file exists and has correct size"""
-    if not os.path.exists(model_path):
-        print(f"❌ ERROR: ONNX model not found at: {model_path}")
-        print(f"  Please download the model and place it at: {model_path}")
-        return False
-
-    file_size = os.path.getsize(model_path) / (1024 * 1024)
-    if file_size < 10:
-        print(f"⚠️  Model file too small: {file_size:.1f}MB (expected ~200MB)")
-        return False
-
-    print(f"✅ Model found: {model_path} ({file_size:.1f}MB)")
-    return True
+from utils import get_options, validate_model, capture_and_recognize
 
 def main():
     opt = get_options()
@@ -36,35 +18,46 @@ def main():
     allowed = {p.strip().upper() for p in opt.get("allowed_plates", [])}
     conf = float(opt.get("confidence", 0.35))
     cooldown = int(opt.get("cooldown_sec", 30))
-    model_path = opt.get("model_path", "/config/www/smart_gate/model.onnx")
+    model_path = opt.get("model_path", "/config/www/smart_gate/models/yolo/model.onnx")
     snapshot_path = opt.get("snapshot_path", "/config/www/smart_gate/snapshot/latest.jpg")
     history_dir = opt.get("history_dir", "/config/www/smart_gate/snapshot/history")
     debug_crop_path = opt.get("debug_path", "/config/www/smart_gate/snapshot/debug/last_plate_crop.jpg")
     keep_history = bool(opt.get("keep_history", False))
+    gpu = bool(opt.get("gpu", False))
     debug = bool(opt.get("debug", False))
 
     if not validate_model(model_path):
         return
 
     print("Loading YOLO model...")
+    from detection import load_model
     sess, inp, out = load_model(model_path)
 
     print("Loading EasyOCR... (first run may take 2-3 minutes)")
     import easyocr
-    reader = easyocr.Reader(['en'], gpu=False)
+    reader = easyocr.Reader(['en'], gpu)
 
-    # State
+    print("Initializing AI Super-Resolution...")
+    from image_processing import get_sr_model
+    sr_model = get_sr_model()
+
+    if sr_model is not None:
+        print("✅ AI Super-Resolution: ENABLED (EDSR 2x)")
+    else:
+        print("ℹ️  AI Super-Resolution: DISABLED (using bicubic fallback)")
+
     last_open = 0.0
     last_motion = ""
 
     print("Smart Gate started. Watching motion:", motion_entity)
     if debug:
         print(f"DEBUG - Confidence: {conf}, ROI: {roi}, Allowed: {allowed}")
+        print(f"DEBUG - Crop path: {debug_crop_path}")
 
-    # Main loop
     while True:
         try:
-            # Check motion sensor
+            from homeassistant import get_state, switch_on
+
             state = get_state(motion_entity)
             if state != last_motion:
                 print(f"State changed: {last_motion} -> {state}")
@@ -89,7 +82,9 @@ def main():
             for i in range(3):
                 plate, score = capture_and_recognize(
                     camera_entity, snapshot_path, sess, inp, out,
-                    reader, roi, conf, debug
+                    reader, roi, conf, debug,
+                    debug_crop_path=debug_crop_path,
+                    attempt_number=i+1
                 )
 
                 if plate:
@@ -106,7 +101,7 @@ def main():
                 time.sleep(1)
                 continue
 
-            # Consensus: require 2/3 agreement
+            from collections import Counter
             plate_counts = Counter(attempts)
             most_common = plate_counts.most_common(1)[0]
             plate, count = most_common
@@ -119,7 +114,6 @@ def main():
                 time.sleep(1)
                 continue
 
-            # Save history if enabled
             if keep_history:
                 os.makedirs(history_dir, exist_ok=True)
                 ts = time.strftime("%Y%m%d_%H%M%S")
@@ -127,7 +121,6 @@ def main():
                 if img is not None:
                     cv2.imwrite(os.path.join(history_dir, f"{ts}_{plate}.jpg"), img)
 
-            # Exact match on whitelist
             if plate in allowed:
                 switch_on(gate_switch)
                 last_open = now

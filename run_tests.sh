@@ -1,8 +1,7 @@
 #!/bin/bash
 
-cd /app
+cd smart_gate/app
 
-# Run tests
 pytest tests/ \
     --verbose \
     --cov=. \
@@ -10,5 +9,4 @@ pytest tests/ \
     --cov-report=term-missing \
     --cov-exclude=tests/
 
-# Open coverage report
 echo "Coverage report generated in htmlcov/index.html"

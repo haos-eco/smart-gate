@@ -1,6 +1,6 @@
 .idea
 .venv
 
-app/models/**/*
-app/tests/fixtures/plates/*
-!app/tests/fixtures/plates/README.md
+**/models/**/*
+**/tests/fixtures/plates/*
+!**/tests/fixtures/plates/README.md

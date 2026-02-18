@@ -1,5 +1,5 @@
 name: Smart Gate
-version: 1.1.0
+version: 1.1.1
 slug: smart_gate
 description: Automatic AI powered license plate recognition gate opener
 url: https://github.com/haos-eco/smart-gate
@@ -22,11 +22,12 @@ options:
   allowed_plates:
   roi: "0.0,0.0,1.0,1.0"
   confidence: 0.5
-  model_path: /config/www/smart_gate/model.onnx
+  model_path: /config/www/smart_gate/models/yolo/model.onnx
   snapshot_path: /config/www/smart_gate/snapshot/latest.jpg
   history_dir: /config/www/smart_gate/snapshot/history
   debug_path: /config/www/smart_gate/snapshot/last_plate_crop.jpg
   keep_history: false
+  gpu: false
   debug: false
 schema:
   motion_entity: str
@@ -37,4 +38,5 @@ schema:
   roi: str
   confidence: float
   keep_history: bool
+  gpu: bool
   debug: bool

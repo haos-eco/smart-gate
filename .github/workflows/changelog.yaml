@@ -25,7 +25,7 @@ jobs:
           chmod +x /usr/local/bin/git-cliff
 
       - name: Generate changelog
-        run: git-cliff --output CHANGELOG.md
+        run: git-cliff --output smart_gate/CHANGELOG.md
 
       - name: Commit and push changelog
         run: |

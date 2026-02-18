@@ -3,12 +3,17 @@ import numpy as np
 import os
 import urllib.request
 
-_SR_MODEL_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "models",
-    "ai",
-    "EDSR_x2.pb"
-)
+if os.path.exists('/config'):
+    # Home Assistant addon (production)
+    _SR_MODEL_PATH = "/config/www/smart_gate/models/ai/EDSR_x2.pb"
+else:
+    # Local development/testing
+    _SR_MODEL_PATH = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "models",
+        "ai",
+        "EDSR_x2.pb"
+    )
 
 _SR_MODEL = None
 
@@ -107,7 +112,6 @@ def get_sr_model():
         sr.setModel(model_type, 2)  # 2x scale
 
         _SR_MODEL = sr
-        print(f"✅ AI SR model loaded: {model_type.upper()} (2x)")
         return _SR_MODEL
 
     except Exception as e:

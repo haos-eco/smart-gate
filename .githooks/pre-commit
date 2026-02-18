@@ -2,7 +2,7 @@
 
 echo "🧪 Running tests before commit..."
 
-cd "$(git rev-parse --show-toplevel)/app" || exit 1
+cd "$(git rev-parse --show-toplevel)/smart_gate/app" || exit 1
 
 pytest tests/ -v --tb=short
 

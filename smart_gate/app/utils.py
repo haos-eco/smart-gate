@@ -13,8 +13,21 @@ def ensure_dir(path: str):
     if directory:
         os.makedirs(directory, exist_ok=True)
 
-def capture_and_recognize(camera_entity, snapshot_path, sess, inp, out, reader, roi, conf, debug):
-    """Capture snapshot and recognize plate (single attempt)"""
+def validate_model(model_path: str) -> bool:
+    if not os.path.exists(model_path):
+        print(f"❌ ERROR: ONNX model not found at: {model_path}")
+        print(f"  Please download the model and place it at: {model_path}")
+        return False
+
+    file_size = os.path.getsize(model_path) / (1024 * 1024)
+    if file_size < 10:
+        print(f"⚠️  Model file too small: {file_size:.1f}MB (expected ~200MB)")
+        return False
+
+    print(f"✅ Model found: {model_path} ({file_size:.1f}MB)")
+    return True
+
+def capture_and_recognize(camera_entity, snapshot_path, sess, inp, out, reader, roi, conf, debug, debug_crop_path=None, attempt_number=None):
     from homeassistant import camera_snapshot
     from image_processing import apply_roi, is_infrared, remove_plate_border, fix_overexposure
     from detection import detect_plates
@@ -22,6 +35,7 @@ def capture_and_recognize(camera_entity, snapshot_path, sess, inp, out, reader, 
 
     ensure_dir(snapshot_path)
     camera_snapshot(camera_entity, snapshot_path)
+
     img = cv2.imread(snapshot_path)
     if img is None:
         return None, 0.0
@@ -47,6 +61,23 @@ def capture_and_recognize(camera_entity, snapshot_path, sess, inp, out, reader, 
         plate_crop = fix_overexposure(plate_crop)
         if debug:
             print(f"  IR mode (sat={saturation:.1f}), applied exposure fix")
+
+    if debug and debug_crop_path:
+        try:
+            ensure_dir(debug_crop_path)
+
+            if attempt_number is not None:
+                base, ext = os.path.splitext(debug_crop_path)
+                save_path = f"{base}_attempt{attempt_number}{ext}"
+            else:
+                save_path = debug_crop_path
+
+            cv2.imwrite(save_path, plate_crop)
+            if debug:
+                print(f"  Debug crop saved: {save_path}")
+        except Exception as e:
+            if debug:
+                print(f"  ⚠️  Failed to save debug crop: {e}")
 
     # OCR with AI super-resolution
     plate = ocr_plate(reader, plate_crop, debug=debug)

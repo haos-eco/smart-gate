@@ -54,7 +54,7 @@ Automatic gate AI powered opener using YOLO + EasyOCR for license plate recognit
 
 - **Debug Mode**: Enable detailed logging and save crops
     - Creates debug images in `/config/www/smart_gate/snapshot/debug/`
-    - Access via: `http://homeassistant.local:8123/local/smart_gate/snapshot/debug/last_plate_crop.jpg`
+    - Access via: `http://homeassistant.local:8123/config/www/smart_gate/snapshot/debug/last_plate_crop.jpg`
 
 - **Keep History**: Save all detection attempts with timestamps
 
@@ -83,17 +83,17 @@ Train a custom YOLOv11 model on your specific plates/cameras
 Upload `model.onnx` to Home Assistant:
 
 **Via File Editor addon:**
-1. Create folder (it should be created automatically): `/config/www/smart_gate/`
+1. Create folder (it should be created automatically): `/config/www/smart_gate/models/yolo/`
 2. Upload `model.onnx` there
 
 **Via Samba/SSH:**
 ```bash
-scp model.onnx root@HOMEASSISTANT_IP:/config/www/smart_gate/
+scp model.onnx root@HOMEASSISTANT_IP:/config/www/smart_gate/models/yolo/
 ```
 
 **Via WebUI:**
 1. Install "File Editor" addon
-2. Create `/config/www/smart_gate/` folder
+2. Create `/config/www/smart_gate/models/yolo/` folder
 3. Upload file
 
 ### 4. Configure
@@ -177,4 +177,4 @@ This addon uses the following open source components:
 
 This project is licensed under **GNU AGPLv3** (inherited from the YOLO model dependency).
 
-See [LICENSE](LICENSE) file for details.
+See [LICENSE](../LICENSE) file for details.
