@@ -42,7 +42,7 @@ def main():
     allowed = {p.strip().upper() for p in opt.get("allowed_plates", [])}
     conf = float(opt.get("confidence", 0.35))
     cooldown = int(opt.get("cooldown_sec", 30))
-    model_path = opt.get("model_path", "/app/model.onnx")
+    model_path = opt.get("model_path", "/config/www/smart_gate/model.onnx")
     snapshot_path = opt.get("snapshot_path", "/config/www/smart_gate/snapshot/latest.jpg")
     history_dir = opt.get("history_dir", "/config/www/smart_gate/snapshot/history")
     debug_crop_path = opt.get("debug_path", "/config/www/smart_gate/snapshot/debug/last_plate_crop.jpg")
