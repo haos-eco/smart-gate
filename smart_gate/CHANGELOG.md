@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [1.1.2] - 2026-02-18
+
+### 🚀 Features
+
+- *(dockerfile)* Enhancements
 
 ### 🐛 Bug Fixes
 
@@ -11,6 +15,7 @@ All notable changes to this project will be documented in this file.
 
 ### 📚 Documentation
 
+- Update changelog [skip ci]
 - Update changelog [skip ci]
 
 ## [1.1.1] - 2026-02-18
