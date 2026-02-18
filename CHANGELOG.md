@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🐛 Bug Fixes
+
+- Resize to standard ha app dimensions icon and logo.png
+
+## [1.0.5] - 2026-02-17
+
 ### 🚀 Features
 
 - Trying to resolve sovraexposure for plates
@@ -14,6 +20,7 @@ All notable changes to this project will be documented in this file.
 
 ### 📚 Documentation
 
+- Update changelog [skip ci]
 - Update changelog [skip ci]
 - Update changelog [skip ci]
 - Update changelog [skip ci]
