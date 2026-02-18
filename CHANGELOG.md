@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### 🐛 Bug Fixes
 
+- Model path, readme
+
+## [.1.0.6] - 2026-02-18
+
+### 🐛 Bug Fixes
+
 - Resize to standard ha app dimensions icon and logo.png
 
 ### 🚜 Refactor
@@ -15,6 +21,7 @@ All notable changes to this project will be documented in this file.
 
 ### 📚 Documentation
 
+- Update changelog [skip ci]
 - Update changelog [skip ci]
 
 ### ⚙️ Miscellaneous Tasks
