@@ -8,6 +8,19 @@ All notable changes to this project will be documented in this file.
 
 - Resize to standard ha app dimensions icon and logo.png
 
+### 🚜 Refactor
+
+- Split main.py in multiple files, added tests
+- Added .githooks precommit for automated test
+
+### 📚 Documentation
+
+- Update changelog [skip ci]
+
+### ⚙️ Miscellaneous Tasks
+
+- Bump version to 1.0.6, update README
+
 ## [1.0.5] - 2026-02-17
 
 ### 🚀 Features
