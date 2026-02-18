@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🐛 Bug Fixes
+
+- Logo in readme and docs
+- Github action update changelog
+
+### 🚜 Refactor
+
+- App structure
+
+### 📚 Documentation
+
+- Update changelog [skip ci]
+
 ## [1.1.0] - 2026-02-18
 
 ### 🚀 Features
