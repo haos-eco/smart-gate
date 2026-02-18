@@ -6,11 +6,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir \
-    onnxruntime \
-    opencv-python-headless \
-    pillow \
-    requests \
-    easyocr
+    onnxruntime==1.16.3 \
+    opencv-contrib-python==4.13.0.92 \
+    pillow==12.1.1 \
+    requests~=2.32.5 \
+    easyocr~=1.7.2 \
+    numpy~=2.4.2
 
 WORKDIR /app
 
