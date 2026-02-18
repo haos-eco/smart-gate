@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🐛 Bug Fixes
+
+- *(dockerfile)* Dependencies versions
+- Bump version to 1.1.2
+
+### 📚 Documentation
+
+- Update changelog [skip ci]
+
 ## [1.1.1] - 2026-02-18
 
 ### 🐛 Bug Fixes
