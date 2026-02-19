@@ -17,6 +17,22 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Get version from config.yaml
+        id: version
+        run: |
+          VERSION=$(grep '^version:' smart_gate/config.yaml | awk '{print $2}')
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "TAG=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if tag already exists
+        id: tag_check
+        run: |
+          if git ls-remote --tags origin "refs/tags/v${{ steps.version.outputs.VERSION }}" | grep -q .; then
+            echo "EXISTS=true" >> $GITHUB_OUTPUT
+          else
+            echo "EXISTS=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Install git-cliff
         run: |
           wget https://github.com/orhun/git-cliff/releases/download/v2.0.4/git-cliff-2.0.4-x86_64-unknown-linux-gnu.tar.gz
@@ -27,6 +43,9 @@ jobs:
       - name: Generate changelog
         run: git-cliff --output smart_gate/CHANGELOG.md
 
+      - name: Generate release notes
+        run: git-cliff --latest --strip header --output RELEASE_NOTES.md
+
       - name: Commit and push changelog
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
@@ -34,3 +53,14 @@ jobs:
           git add smart_gate/CHANGELOG.md
           git diff --staged --quiet || git commit -m "docs: update changelog [skip ci]"
           git push
+
+      - name: Create tag and release
+        if: steps.tag_check.outputs.EXISTS == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git tag ${{ steps.version.outputs.TAG }}
+          git push origin ${{ steps.version.outputs.TAG }}
+          gh release create ${{ steps.version.outputs.TAG }} \
+            --title "Release ${{ steps.version.outputs.TAG }}" \
+            --notes-file RELEASE_NOTES.md
