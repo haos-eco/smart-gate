@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 📚 Documentation
+
+- Update changelog [skip ci]
+- Update DOCS.md and README.md
+
 ## [1.2.1] - 2026-02-19
 
 ### 🚀 Features
