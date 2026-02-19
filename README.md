@@ -1,5 +1,15 @@
 <img src="https://raw.githubusercontent.com/haos-eco/smart-gate/main/smart_gate/logo.png" alt="Smart Gate" />
 
+[![GitHub Release][releases-shield]][releases]
+![Project Stage][project-stage-shield]
+[![License][license-shield]](LICENSE.md)
+
+![Supports aarch64 Architecture][aarch64-shield]
+![Supports amd64 Architecture][amd64-shield]
+
+[![Github Actions][github-actions-shield]][github-actions]
+![Project Maintenance][maintenance-shield]
+
 ## Development Setup
 
 ### 1. Clone repository
@@ -124,7 +134,14 @@ To skip (not recommended):
 git commit --no-verify
 ```
 
-
-
+[aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
+[amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
+[releases-shield]: https://img.shields.io/github/v/release/haos-eco/smart-gate?include_prereleases
+[releases]: https://github.com/haos-eco/smart-gate/releases
+[github-actions-shield]: https://github.com/haos-eco/smart-gate/actions/workflows/changelog.yaml/badge.svg
+[github-actions]: https://github.com/haos-eco/smart-gate/actions/workflows/changelog.yaml
+[license-shield]: https://img.shields.io/github/license/haos-eco/smart-gate
+[maintenance-shield]: https://img.shields.io/maintenance/yes/2026.svg
+[project-stage-shield]: https://img.shields.io/badge/project%20stage-production%20ready-brightgreen.svg
 
 
