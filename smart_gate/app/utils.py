@@ -83,3 +83,33 @@ def capture_and_recognize(camera_entity, snapshot_path, sess, inp, out, reader, 
     plate = ocr_plate(reader, plate_crop, debug=debug)
 
     return plate, score
+
+def levenshtein(a: str, b: str) -> int:
+    """Calculate edit distance between two strings"""
+    if len(a) < len(b):
+        return levenshtein(b, a)
+    if len(b) == 0:
+        return len(a)
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a):
+        curr = [i + 1]
+        for j, cb in enumerate(b):
+            curr.append(min(prev[j + 1] + 1, curr[j] + 1, prev[j] + (ca != cb)))
+        prev = curr
+    return prev[-1]
+
+def fuzzy_match(plate: str, allowed: list, max_distance: int = 2):
+    """
+    Returns (matched_plate, distance) if a close match is found, else (None, -1).
+    Distance 0 = exact match.
+    """
+    best_plate = None
+    best_dist = max_distance + 1
+    for candidate in allowed:
+        d = levenshtein(plate, candidate)
+        if d < best_dist:
+            best_dist = d
+            best_plate = candidate
+    if best_plate and best_dist <= max_distance:
+        return best_plate, best_dist
+    return None, -1

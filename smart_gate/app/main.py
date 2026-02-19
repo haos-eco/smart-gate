@@ -2,7 +2,8 @@ import os
 import time
 import cv2
 
-from utils import get_options, validate_model, capture_and_recognize
+from utils import get_options, validate_model, capture_and_recognize, fuzzy_match
+
 
 def main():
     opt = get_options()
@@ -15,7 +16,6 @@ def main():
     motion_entity = opt["motion_entity"]
     camera_entity = opt["camera_entity"]
     gate_switch = opt["gate_switch"]
-    allowed = {p.strip().upper() for p in opt.get("allowed_plates", [])}
     conf = float(opt.get("confidence", 0.35))
     cooldown = int(opt.get("cooldown_sec", 30))
     model_path = opt.get("model_path", "/config/www/smart_gate/models/yolo/model.onnx")
@@ -25,6 +25,22 @@ def main():
     keep_history = bool(opt.get("keep_history", False))
     gpu = bool(opt.get("gpu", False))
     debug = bool(opt.get("debug", False))
+
+    # Build plate -> person_entity map
+    # Supports both formats:
+    #   - {plate: "CB234YC", person_entity: "person.andrea"}  (with GPS check on fuzzy)
+    #   - "CB234YC"  (legacy plain string, no GPS check)
+    plate_to_person = {}
+    for entry in opt.get("allowed_plates", []):
+        if isinstance(entry, dict):
+            p = entry.get("plate", "").strip().upper()
+            person = entry.get("person_entity", "")
+            if p:
+                plate_to_person[p] = person
+        else:
+            plate_to_person[entry.strip().upper()] = ""
+
+    allowed_plates = set(plate_to_person.keys())
 
     if not validate_model(model_path):
         return
@@ -51,7 +67,7 @@ def main():
 
     print("Smart Gate started. Watching motion:", motion_entity)
     if debug:
-        print(f"DEBUG - Confidence: {conf}, ROI: {roi}, Allowed: {allowed}")
+        print(f"DEBUG - Confidence: {conf}, ROI: {roi}, Allowed: {allowed_plates}")
         print(f"DEBUG - Crop path: {debug_crop_path}")
 
     while True:
@@ -121,12 +137,43 @@ def main():
                 if img is not None:
                     cv2.imwrite(os.path.join(history_dir, f"{ts}_{plate}.jpg"), img)
 
-            if plate in allowed:
+            matched, distance = fuzzy_match(plate, list(allowed_plates), max_distance=2)
+
+            if matched is None:
+                if debug:
+                    print(f"❌ Plate '{plate}' not in whitelist (no fuzzy match)")
+                time.sleep(2)
+                continue
+
+            if distance == 0:
+                # Exact match — open immediately, GPS not required
+                print(f"✅ Exact match '{plate}' → gate opening")
                 switch_on(gate_switch)
                 last_open = now
-                print(f"✅ Gate opened for: {plate}")
-            elif debug:
-                print(f"❌ Plate '{plate}' not in whitelist")
+
+            else:
+                # Fuzzy match — check the person specifically linked to this plate
+                person_entity = plate_to_person.get(matched, "")
+
+                if not person_entity:
+                    print(f"⛔ Fuzzy match '{plate}' ≈ '{matched}' (distance: {distance}) but no person_entity configured — gate stays closed")
+                    time.sleep(2)
+                    continue
+
+                print(f"🔍 Fuzzy match '{plate}' ≈ '{matched}' (distance: {distance}) — checking {person_entity}...")
+                try:
+                    person_state = get_state(person_entity)
+                except Exception as e:
+                    print(f"⚠️  Could not get state for {person_entity}: {e} — gate stays closed")
+                    time.sleep(2)
+                    continue
+
+                if person_state == "home":
+                    print(f"✅ Fuzzy match + {person_entity} home → gate opening (read '{plate}', matched '{matched}')")
+                    switch_on(gate_switch)
+                    last_open = now
+                else:
+                    print(f"⛔ Fuzzy match '{plate}' ≈ '{matched}' but {person_entity} not home — gate stays closed")
 
             time.sleep(2)
 

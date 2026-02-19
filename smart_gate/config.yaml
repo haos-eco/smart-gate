@@ -34,7 +34,9 @@ schema:
   camera_entity: str
   gate_switch: str
   cooldown_sec: int
-  allowed_plates: [str]
+  allowed_plates:
+    - plate: str
+      person_entity: str?
   roi: str
   confidence: float
   keep_history: bool
