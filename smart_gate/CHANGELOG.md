@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🚀 Features
+
+- Update gh action changelog.yaml to release new version
+
+### 📚 Documentation
+
+- Update changelog [skip ci]
+
 ## [1.2.0] - 2026-02-19
 
 ### 🚀 Features
