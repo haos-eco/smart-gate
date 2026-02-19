@@ -38,20 +38,20 @@ def capture_and_recognize(camera_entity, snapshot_path, sess, inp, out, reader, 
 
     img = cv2.imread(snapshot_path)
     if img is None:
-        return None, 0.0
+        return None, 0.0, 0.0
 
     img_roi = apply_roi(img, roi)
     boxes = detect_plates(sess, inp, out, img_roi, conf=conf, debug=debug)
 
     if not boxes:
-        return None, 0.0
+        return None, 0.0, 0.0
 
     boxes.sort(key=lambda b: b[4], reverse=True)
     x1, y1, x2, y2, score = boxes[0]
     plate_crop = img_roi[max(0, y1):max(0, y2), max(0, x1):max(0, x2)]
 
     if plate_crop.size == 0:
-        return None, 0.0
+        return None, 0.0, 0.0
 
     # Preprocessing
     plate_crop = remove_plate_border(plate_crop)
@@ -65,24 +65,21 @@ def capture_and_recognize(camera_entity, snapshot_path, sess, inp, out, reader, 
     if debug and debug_crop_path:
         try:
             ensure_dir(debug_crop_path)
-
             if attempt_number is not None:
                 base, ext = os.path.splitext(debug_crop_path)
                 save_path = f"{base}_attempt{attempt_number}{ext}"
             else:
                 save_path = debug_crop_path
-
             cv2.imwrite(save_path, plate_crop)
-            if debug:
-                print(f"  Debug crop saved: {save_path}")
+            print(f"  Debug crop saved: {save_path}")
         except Exception as e:
             if debug:
                 print(f"  ⚠️  Failed to save debug crop: {e}")
 
     # OCR with AI super-resolution
-    plate = ocr_plate(reader, plate_crop, debug=debug)
+    plate, ocr_conf = ocr_plate(reader, plate_crop, debug=debug)
 
-    return plate, score
+    return plate, score, ocr_conf
 
 def levenshtein(a: str, b: str) -> int:
     """Calculate edit distance between two strings"""
@@ -98,7 +95,7 @@ def levenshtein(a: str, b: str) -> int:
         prev = curr
     return prev[-1]
 
-def fuzzy_match(plate: str, allowed: list, max_distance: int = 2):
+def fuzzy_match(plate: str, allowed, max_distance: int = 2):
     """
     Returns (matched_plate, distance) if a close match is found, else (None, -1).
     Distance 0 = exact match.

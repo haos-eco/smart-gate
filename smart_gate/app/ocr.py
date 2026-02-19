@@ -26,7 +26,9 @@ def extract_plate_pattern(text):
 
 def fix_common_ocr_errors(plate_text):
     """Fix common OCR errors for Italian plate format AA123AA"""
+    # Digit that looks like a letter (in letter positions)
     letter_fixes = {'0': 'O', '1': 'I', '4': 'A', '8': 'B'}
+    # Letter that looks like a digit (in digit positions)
     number_fixes = {'O': '0', 'I': '1', 'Z': '4', 'S': '5', 'B': '8'}
 
     if len(plate_text) != 7:
@@ -75,15 +77,15 @@ def ocr_plate(reader, img_bgr, debug=False):
     ]
 
     if not valid_results:
-        return ""
+        return "", 0.0
 
     # Get best result
     valid_results.sort(key=lambda x: len(x[0]), reverse=True)
-    best = valid_results[0][0]
+    best, best_conf = valid_results[0]
     best_extracted = extract_plate_pattern(best)
     best_fixed = fix_common_ocr_errors(best_extracted)
 
     if debug:
-        print(f"Best OCR: '{best}' -> extracted: '{best_extracted}' -> fixed: '{best_fixed}'")
+        print(f"Best OCR: '{best}' -> extracted: '{best_extracted}' -> fixed: '{best_fixed}' (conf: {best_conf:.3f})")
 
-    return best_fixed
+    return best_fixed, best_conf

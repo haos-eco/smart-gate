@@ -16,8 +16,10 @@ def main():
     motion_entity = opt["motion_entity"]
     camera_entity = opt["camera_entity"]
     gate_switch = opt["gate_switch"]
-    conf = float(opt.get("confidence", 0.35))
-    cooldown = int(opt.get("cooldown_sec", 30))
+    conf = float(opt.get("confidence", 0.5))
+    cooldown = int(opt.get("cooldown_sec", 60))
+    min_yolo_score = float(opt.get("min_yolo_score", 0.65))
+    min_ocr_confidence = float(opt.get("min_ocr_confidence", 0.75))
     model_path = opt.get("model_path", "/config/www/smart_gate/models/yolo/model.onnx")
     snapshot_path = opt.get("snapshot_path", "/config/www/smart_gate/snapshot/latest.jpg")
     history_dir = opt.get("history_dir", "/config/www/smart_gate/snapshot/history")
@@ -67,8 +69,8 @@ def main():
 
     print("Smart Gate started. Watching motion:", motion_entity)
     if debug:
-        print(f"DEBUG - Confidence: {conf}, ROI: {roi}, Allowed: {allowed_plates}")
-        print(f"DEBUG - Crop path: {debug_crop_path}")
+        print(f"DEBUG - YOLO conf threshold: {conf}, min_yolo_score: {min_yolo_score}, min_ocr_confidence: {min_ocr_confidence}")
+        print(f"DEBUG - ROI: {roi}, Allowed plates: {allowed_plates}")
 
     while True:
         try:
@@ -93,10 +95,13 @@ def main():
 
             print("Motion detected! Multi-attempt recognition...")
 
-            # Multi-attempt: 3 captures with 0.5s pause
-            attempts = []
+            # 3 attempts, keep the best by combined score
+            best_plate = None
+            best_yolo = 0.0
+            best_ocr = 0.0
+
             for i in range(3):
-                plate, score = capture_and_recognize(
+                plate, yolo_score, ocr_conf = capture_and_recognize(
                     camera_entity, snapshot_path, sess, inp, out,
                     reader, roi, conf, debug,
                     debug_crop_path=debug_crop_path,
@@ -104,29 +109,33 @@ def main():
                 )
 
                 if plate:
-                    attempts.append(plate)
-                    print(f"  Attempt {i+1}/3: '{plate}' (YOLO score: {score:.3f})")
+                    print(f"  Attempt {i+1}/3: '{plate}' (YOLO: {yolo_score:.3f}, OCR: {ocr_conf:.3f})")
+                    # Keep best attempt by combined score
+                    if (yolo_score + ocr_conf) > (best_yolo + best_ocr):
+                        best_plate = plate
+                        best_yolo = yolo_score
+                        best_ocr = ocr_conf
                 else:
                     print(f"  Attempt {i+1}/3: No plate detected")
 
-                if i < 2:  # Don't wait after last attempt
+                if i < 2:
                     time.sleep(0.5)
 
-            if not attempts:
+            if not best_plate:
                 print("❌ No plates detected in any attempt")
                 time.sleep(1)
                 continue
 
-            from collections import Counter
-            plate_counts = Counter(attempts)
-            most_common = plate_counts.most_common(1)[0]
-            plate, count = most_common
+            print(f"📊 Best detection: '{best_plate}' (YOLO: {best_yolo:.3f}, OCR: {best_ocr:.3f})")
 
-            print(f"📊 Consensus: '{plate}' ({count}/{len(attempts)} attempts)")
+            # Quality check: require minimum scores to proceed
+            if best_yolo < min_yolo_score:
+                print(f"⚠️  YOLO score too low ({best_yolo:.3f} < {min_yolo_score}) — gate stays closed")
+                time.sleep(1)
+                continue
 
-            # Security: require at least 2/3 consensus
-            if count < 2:
-                print(f"⚠️  No consensus (need 2/3), gate stays closed")
+            if best_ocr < min_ocr_confidence:
+                print(f"⚠️  OCR confidence too low ({best_ocr:.3f} < {min_ocr_confidence}) — gate stays closed")
                 time.sleep(1)
                 continue
 
@@ -135,19 +144,19 @@ def main():
                 ts = time.strftime("%Y%m%d_%H%M%S")
                 img = cv2.imread(snapshot_path)
                 if img is not None:
-                    cv2.imwrite(os.path.join(history_dir, f"{ts}_{plate}.jpg"), img)
+                    cv2.imwrite(os.path.join(history_dir, f"{ts}_{best_plate}.jpg"), img)
 
-            matched, distance = fuzzy_match(plate, list(allowed_plates), max_distance=2)
+            matched, distance = fuzzy_match(best_plate, list(allowed_plates), max_distance=2)
 
             if matched is None:
                 if debug:
-                    print(f"❌ Plate '{plate}' not in whitelist (no fuzzy match)")
+                    print(f"❌ Plate '{best_plate}' not in whitelist (no fuzzy match)")
                 time.sleep(2)
                 continue
 
             if distance == 0:
                 # Exact match — open immediately, GPS not required
-                print(f"✅ Exact match '{plate}' → gate opening")
+                print(f"✅ Exact match '{best_plate}' → gate opening")
                 switch_on(gate_switch)
                 last_open = now
 
@@ -156,11 +165,11 @@ def main():
                 person_entity = plate_to_person.get(matched, "")
 
                 if not person_entity:
-                    print(f"⛔ Fuzzy match '{plate}' ≈ '{matched}' (distance: {distance}) but no person_entity configured — gate stays closed")
+                    print(f"⛔ Fuzzy match '{best_plate}' ≈ '{matched}' (distance: {distance}) but no person_entity configured — gate stays closed")
                     time.sleep(2)
                     continue
 
-                print(f"🔍 Fuzzy match '{plate}' ≈ '{matched}' (distance: {distance}) — checking {person_entity}...")
+                print(f"🔍 Fuzzy match '{best_plate}' ≈ '{matched}' (distance: {distance}) — checking {person_entity}...")
                 try:
                     person_state = get_state(person_entity)
                 except Exception as e:
@@ -169,11 +178,11 @@ def main():
                     continue
 
                 if person_state == "home":
-                    print(f"✅ Fuzzy match + {person_entity} home → gate opening (read '{plate}', matched '{matched}')")
+                    print(f"✅ Fuzzy match + {person_entity} home → gate opening (read '{best_plate}', matched '{matched}')")
                     switch_on(gate_switch)
                     last_open = now
                 else:
-                    print(f"⛔ Fuzzy match '{plate}' ≈ '{matched}' but {person_entity} not home — gate stays closed")
+                    print(f"⛔ Fuzzy match '{best_plate}' ≈ '{matched}' but {person_entity} not home — gate stays closed")
 
             time.sleep(2)
 
