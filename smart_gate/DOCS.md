@@ -13,13 +13,15 @@ Automatic gate AI powered opener using YOLO + EasyOCR for license plate recognit
 [amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
 
 ## Features
-
 - 🚗 Automatic license plate detection using YOLOv11
 - 🔍 OCR with EasyOCR for Italian plates (AA123AA format)
-- 🤖 AI Super-Resolution (EDSR) for enhanced accuracy
-- 🎯 Multi-attempt recognition with consensus (2/3 agreement required)
-- 🌙 Automatic IR detection and exposure correction
-- 📊 Debug mode with snapshot history
+- 🤖 AI Super-Resolution (EDSR 2x) for enhanced accuracy on low-res crops
+- 🌙 Automatic IR detection and exposure correction for night shots
+- 🎯 Multi-attempt recognition — best result selected by combined YOLO + OCR score
+- 🔎 Fuzzy matching for OCR errors (up to 2 character tolerance)
+- 📍 GPS-based security — fuzzy matches require the plate owner to be home
+- 🔒 Per-plate person entity — each plate linked to its specific owner
+- 📊 Debug mode with per-attempt snapshot history
 
 ## Configuration
 
