@@ -59,30 +59,33 @@ class TestFixCommonOCRErrors:
 
 def test_ocr_plate_integration(sample_plate_image, mock_easyocr_reader):
     """Integration test for OCR pipeline"""
-    result = ocr_plate(mock_easyocr_reader, sample_plate_image, debug=False)
+    plate, conf = ocr_plate(mock_easyocr_reader, sample_plate_image, debug=False)
 
-    assert result == 'GR571XC'
+    assert plate == 'GR571XC'
+    assert conf > 0.5
     mock_easyocr_reader.readtext.assert_called_once()
 
 def test_ocr_plate_no_results(sample_plate_image):
     """Test OCR with no results"""
-    mock_reader = Mock()  # ← Cambiato da pytest.Mock()
+    mock_reader = Mock()
     mock_reader.readtext.return_value = []
 
-    result = ocr_plate(mock_reader, sample_plate_image, debug=False)
+    plate, conf = ocr_plate(mock_reader, sample_plate_image, debug=False)
 
-    assert result == ''
+    assert plate == ''
+    assert conf == 0.0
 
 def test_ocr_plate_low_confidence(sample_plate_image):
     """Test OCR with low confidence results"""
-    mock_reader = Mock()  # ← Cambiato da pytest.Mock()
+    mock_reader = Mock()
     mock_reader.readtext.return_value = [
         ([(0, 0), (100, 0), (100, 50), (0, 50)], 'GR571XC', 0.3)  # Below 0.5
     ]
 
-    result = ocr_plate(mock_reader, sample_plate_image, debug=False)
+    plate, conf = ocr_plate(mock_reader, sample_plate_image, debug=False)
 
-    assert result == ''
+    assert plate == ''
+    assert conf == 0.0
 
 def test_ocr_plate_multiple_results(sample_plate_image):
     """Test OCR with multiple results (picks longest)"""
@@ -93,10 +96,10 @@ def test_ocr_plate_multiple_results(sample_plate_image):
         ([(160, 0), (200, 0), (200, 30), (160, 30)], '571', 0.85)
     ]
 
-    result = ocr_plate(mock_reader, sample_plate_image, debug=False)
+    plate, conf = ocr_plate(mock_reader, sample_plate_image, debug=False)
 
-    # Should pick the longest valid result
-    assert result == 'GR571XC'
+    assert plate == 'GR571XC'
+    assert conf == 0.95
 
 def test_ocr_plate_with_extraction(sample_plate_image):
     """Test OCR with pattern extraction (8 chars -> 7 chars)"""
@@ -105,10 +108,10 @@ def test_ocr_plate_with_extraction(sample_plate_image):
         ([(0, 0), (100, 0), (100, 50), (0, 50)], 'IGR571XC', 0.9)  # 8 chars
     ]
 
-    result = ocr_plate(mock_reader, sample_plate_image, debug=False)
+    plate, conf = ocr_plate(mock_reader, sample_plate_image, debug=False)
 
-    # Should extract 7-char pattern
-    assert result == 'GR571XC'
+    assert plate == 'GR571XC'
+    assert conf == 0.9
 
 def test_ocr_plate_with_correction(sample_plate_image):
     """Test OCR with error correction"""
@@ -117,7 +120,7 @@ def test_ocr_plate_with_correction(sample_plate_image):
         ([(0, 0), (100, 0), (100, 50), (0, 50)], 'GR5Z1XC', 0.9)  # Z should be 4
     ]
 
-    result = ocr_plate(mock_reader, sample_plate_image, debug=False)
+    plate, conf = ocr_plate(mock_reader, sample_plate_image, debug=False)
 
-    # Should fix Z->4 in number position
-    assert result == 'GR541XC'
+    assert plate == 'GR541XC'
+    assert conf == 0.9
