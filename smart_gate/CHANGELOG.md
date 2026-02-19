@@ -4,13 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🚀 Features
+
+- Implement fuzzy matching and person entity for allowed plates
+
 ### 📚 Documentation
 
+- Update changelog [skip ci]
 - Update changelog [skip ci]
 
 ### ⚙️ Miscellaneous Tasks
 
 - Update README
+- Bump version to 1.2.0
 
 ## [1.1.2] - 2026-02-18
 
