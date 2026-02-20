@@ -21,7 +21,7 @@ def main():
     model_path = opt.get("model_path", "/config/www/smart_gate/models/yolo/model.onnx")
     snapshot_path = opt.get("snapshot_path", "/config/www/smart_gate/snapshot/latest.jpg")
     history_dir = opt.get("history_dir", "/config/www/smart_gate/snapshot/history")
-    notify_devices = opt.get("notify_devices", [])
+    notify_services = opt.get("notify_services", [])
     visitor_stop_sec = int(opt.get("visitor_stop_sec", 5))
     notification_sound = opt.get("notification_sound", "default")
     debug_crop_path = opt.get("debug_path", "/config/www/smart_gate/snapshot/debug/last_plate_crop.jpg")
@@ -29,10 +29,10 @@ def main():
     gpu = bool(opt.get("gpu", False))
     debug = bool(opt.get("debug", False))
 
-    if isinstance(notify_devices, str):
-        notify_services = [notify_devices] if notify_devices else []
+    if isinstance(notify_services, str):
+        _notify_services = [notify_services] if notify_services else []
     else:
-        notify_services = [s for s in notify_devices if s]
+        _notify_services = [s for s in notify_services if s]
 
     # Build plate -> person_entity map
     # Supports both formats:
@@ -80,8 +80,8 @@ def main():
     if debug:
         print(f"DEBUG - YOLO conf threshold: {conf}, min_yolo_score: {min_yolo_score}, min_ocr_confidence: {min_ocr_confidence}")
         print(f"DEBUG - ROI: {roi}, Allowed plates: {allowed_plates}")
-        if notify_services:
-            print(f"DEBUG - Visitor notification: {notify_devices}, stop threshold: {visitor_stop_sec}s")
+        if _notify_services:
+            print(f"DEBUG - Visitor notification: {_notify_services}, stop threshold: {visitor_stop_sec}s")
         else:
             print("DEBUG - Visitor notification: disabled (notify_services not set)")
 
@@ -120,7 +120,7 @@ def main():
                 print(f"🔔 Vehicle stopped for {visitor_stop_sec}s — sending visitor notification...")
                 try:
                     camera_snapshot(camera_entity, snapshot_path)
-                    send_visitor_notification(notify_services, snapshot_path, camera_entity, notification_sound)
+                    send_visitor_notification(_notify_services, snapshot_path, camera_entity, notification_sound)
                     visitor_notified = True
                     print("🔔 Visitor notification sent")
 

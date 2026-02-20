@@ -46,10 +46,10 @@ schema:
   confidence: float
   min_yolo_score: float
   min_ocr_confidence: float
-  keep_history: bool
-  gpu: bool
-  debug: bool
   notify_services:
     - str
   visitor_stop_sec: int?
   notification_sound: str?
+  keep_history: bool
+  gpu: bool
+  debug: bool
