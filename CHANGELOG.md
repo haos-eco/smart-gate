@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [1.2.2] - 2026-02-20
 
 ### 🚀 Features
 
@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 
 - Prefer plates that fully matches allowed plates
 - Test_rot_snapshot paths
+- Retrieving notify_services options
 
 ### 🚜 Refactor
 
@@ -23,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - Update DOCS.md and README.md
 - Update changelog [skip ci]
 - Update DOCS.md and README.md
+- Update changelog [skip ci]
 - Update changelog [skip ci]
 
 ### 🧪 Testing
