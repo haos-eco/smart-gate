@@ -4,7 +4,6 @@ import cv2
 
 from utils import get_options, is_complete_plate, validate_model, capture_and_recognize, fuzzy_match
 
-
 def main():
     opt = get_options()
 
@@ -90,7 +89,8 @@ def main():
 
     while True:
         try:
-            from homeassistant import get_state, switch_on, send_visitor_notification, camera_snapshot
+            from homeassistant import get_state, camera_snapshot, switch_on
+            from notifications import send_visitor_notification
 
             state = get_state(motion_entity)
 
