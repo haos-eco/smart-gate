@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🐛 Bug Fixes
+
+- Main variable error
+
+### 📚 Documentation
+
+- Update changelog [skip ci]
+
 ## [1.2.2] - 2026-02-20
 
 ### 🚀 Features
