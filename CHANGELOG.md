@@ -11,6 +11,11 @@ All notable changes to this project will be documented in this file.
 ### 📚 Documentation
 
 - Update changelog [skip ci]
+- Update changelog [skip ci]
+
+### ⚙️ Miscellaneous Tasks
+
+- Fix config.yaml
 
 ## [1.2.2] - 2026-02-20
 
