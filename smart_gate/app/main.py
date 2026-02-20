@@ -12,7 +12,6 @@ def main():
     roi_raw = opt.get("roi", "0.0,0.0,1.0,1.0")
     roi = [float(x.strip()) for x in roi_raw.split(",")] if isinstance(roi_raw, str) else roi_raw
 
-    # Configuration
     motion_entity = opt["motion_entity"]
     camera_entity = opt["camera_entity"]
     gate_switch = opt["gate_switch"]
@@ -23,10 +22,18 @@ def main():
     model_path = opt.get("model_path", "/config/www/smart_gate/models/yolo/model.onnx")
     snapshot_path = opt.get("snapshot_path", "/config/www/smart_gate/snapshot/latest.jpg")
     history_dir = opt.get("history_dir", "/config/www/smart_gate/snapshot/history")
+    notify_devices = opt.get("notify_devices", [])
+    visitor_stop_sec = int(opt.get("visitor_stop_sec", 5))
+    notification_sound = opt.get("notification_sound", "default")
     debug_crop_path = opt.get("debug_path", "/config/www/smart_gate/snapshot/debug/last_plate_crop.jpg")
     keep_history = bool(opt.get("keep_history", False))
     gpu = bool(opt.get("gpu", False))
     debug = bool(opt.get("debug", False))
+
+    if isinstance(notify_devices, str):
+        notify_services = [notify_devices] if notify_devices else []
+    else:
+        notify_services = [s for s in notify_devices if s]
 
     # Build plate -> person_entity map
     # Supports both formats:
@@ -66,21 +73,65 @@ def main():
 
     last_open = 0.0
     last_motion = ""
+    motion_off_since = None       # timestamp when motion went OFF
+    visitor_notified = False      # avoid sending multiple notifications per stop event
+    notification_thread = None    # background thread listening for open action
 
     print("Smart Gate started. Watching motion:", motion_entity)
     if debug:
         print(f"DEBUG - YOLO conf threshold: {conf}, min_yolo_score: {min_yolo_score}, min_ocr_confidence: {min_ocr_confidence}")
         print(f"DEBUG - ROI: {roi}, Allowed plates: {allowed_plates}")
+        if notify_services:
+            print(f"DEBUG - Visitor notification: {notify_devices}, stop threshold: {visitor_stop_sec}s")
+        else:
+            print("DEBUG - Visitor notification: disabled (notify_services not set)")
+
+
 
     while True:
         try:
-            from homeassistant import get_state, switch_on
+            from homeassistant import get_state, switch_on, send_visitor_notification, camera_snapshot
 
             state = get_state(motion_entity)
+
+            # Track motion state transitions
             if state != last_motion:
                 print(f"State changed: {last_motion} -> {state}")
+
+                if state == "off":
+                    # Vehicle stopped or left — start stop timer
+                    motion_off_since = time.time()
+                    visitor_notified = False
+                elif state == "on":
+                    # New motion — reset stop timer and notification flag
+                    motion_off_since = None
+                    visitor_notified = False
+
                 last_motion = state
 
+            # --- Visitor notification: vehicle stopped for visitor_stop_sec ---
+            if (
+                    notify_devices
+                    and state == "off"
+                    and motion_off_since is not None
+                    and not visitor_notified
+                    and (time.time() - motion_off_since) >= visitor_stop_sec
+            ):
+                print(f"🔔 Vehicle stopped for {visitor_stop_sec}s — sending visitor notification...")
+                try:
+                    camera_snapshot(camera_entity, snapshot_path)
+                    send_visitor_notification(notify_services, snapshot_path, camera_entity, notification_sound)
+                    visitor_notified = True
+                    print("🔔 Visitor notification sent")
+
+                    # Start background thread to listen for open gate action
+                    if notification_thread is None or not notification_thread.is_alive():
+                        from notifications import start_notification_listener
+                        notification_thread = start_notification_listener(gate_switch, debug)
+                except Exception as e:
+                    print(f"⚠️  Failed to send visitor notification: {e}")
+
+            # --- License plate recognition: only when motion is ON ---
             if state != "on":
                 time.sleep(0.5)
                 continue
