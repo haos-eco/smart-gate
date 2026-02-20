@@ -4,10 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🐛 Bug Fixes
+
+- Prefer plates that fully matches allowed plates
+
 ### 📚 Documentation
 
 - Update changelog [skip ci]
 - Update DOCS.md and README.md
+- Update changelog [skip ci]
 
 ## [1.2.1] - 2026-02-19
 
