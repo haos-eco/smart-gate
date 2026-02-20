@@ -3,4 +3,5 @@
 
 **/models/**/*
 **/tests/fixtures/plates/*
-!**/tests/fixtures/plates/README.md
+**/tests/fixtures/roi/*
+!**/tests/fixtures/**/README.md
