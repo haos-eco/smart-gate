@@ -28,12 +28,12 @@ options:
   snapshot_path: /config/www/smart_gate/snapshot/latest.jpg
   history_dir: /config/www/smart_gate/snapshot/history
   debug_path: /config/www/smart_gate/snapshot/last_plate_crop.jpg
+  visitor_stop_sec: 5
+  notify_services:
+  notification_sound: default
   keep_history: false
   gpu: false
   debug: false
-  notify_devices:
-  visitor_stop_sec: 5
-  notification_sound: default
 schema:
   motion_entity: str
   camera_entity: str
