@@ -5,3 +5,5 @@
 **/tests/fixtures/plates/*
 **/tests/fixtures/roi/*
 !**/tests/fixtures/**/README.md
+
+prod_config.yaml

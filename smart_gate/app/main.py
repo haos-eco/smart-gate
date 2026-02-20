@@ -111,7 +111,7 @@ def main():
 
             # --- Visitor notification: vehicle stopped for visitor_stop_sec ---
             if (
-                    notify_devices
+                    notify_services
                     and state == "off"
                     and motion_off_since is not None
                     and not visitor_notified
