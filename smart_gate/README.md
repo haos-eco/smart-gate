@@ -17,8 +17,8 @@ Automatic gate AI powered opener using YOLO + EasyOCR for license plate recognit
 - 🔍 OCR with EasyOCR for Italian plates (AA123AA format)
 - 🤖 AI Super-Resolution (EDSR 2x) for enhanced accuracy on low-res crops
 - 🌙 Automatic IR detection and exposure correction for night shots
-- 🎯 Multi-attempt recognition — best result selected by combined YOLO + OCR score
+- 🎯 Multi-attempt recognition — exact match takes priority, then best result selected by combined YOLO + OCR score
 - 🔎 Fuzzy matching for OCR errors (up to 2 character tolerance)
-- 📍 GPS-based security — fuzzy matches require the plate owner to be home
+- 📍 GPS-based security — fuzzy matches require the plate owner to be in home zone
 - 🔒 Per-plate person entity — each plate linked to its specific owner
 - 📊 Debug mode with per-attempt snapshot history
