@@ -1,6 +1,7 @@
 import os
 import json
 import cv2
+import re as _re
 
 def get_options():
     """Load options from Home Assistant supervisor"""
@@ -12,6 +13,10 @@ def ensure_dir(path: str):
     directory = os.path.dirname(path)
     if directory:
         os.makedirs(directory, exist_ok=True)
+
+def is_complete_plate(p: str) -> bool:
+    """Returns True if plate matches full Italian format AA123AA"""
+    return bool(_re.match(r'^[A-Z]{2}\d{3}[A-Z]{2}$', p))
 
 def validate_model(model_path: str) -> bool:
     if not os.path.exists(model_path):

@@ -2,7 +2,7 @@ import os
 import time
 import cv2
 
-from utils import get_options, validate_model, capture_and_recognize, fuzzy_match
+from utils import get_options, is_complete_plate, validate_model, capture_and_recognize, fuzzy_match
 
 
 def main():
@@ -95,10 +95,11 @@ def main():
 
             print("Motion detected! Multi-attempt recognition...")
 
-            # 3 attempts, keep the best by combined score
+            # 3 attempts — prefer complete plates (AA123AA), then best combined score
             best_plate = None
             best_yolo = 0.0
             best_ocr = 0.0
+            best_is_complete = False
 
             for i in range(3):
                 plate, yolo_score, ocr_conf = capture_and_recognize(
@@ -110,11 +111,17 @@ def main():
 
                 if plate:
                     print(f"  Attempt {i+1}/3: '{plate}' (YOLO: {yolo_score:.3f}, OCR: {ocr_conf:.3f})")
-                    # Keep best attempt by combined score
-                    if (yolo_score + ocr_conf) > (best_yolo + best_ocr):
+                    is_complete = is_complete_plate(plate)
+                    combined = yolo_score + ocr_conf
+                    best_combined = best_yolo + best_ocr
+                    # A complete plate always beats a partial one
+                    # Among equal completeness, pick best combined score
+                    if (is_complete and not best_is_complete) or \
+                            (is_complete == best_is_complete and combined > best_combined):
                         best_plate = plate
                         best_yolo = yolo_score
                         best_ocr = ocr_conf
+                        best_is_complete = is_complete
                 else:
                     print(f"  Attempt {i+1}/3: No plate detected")
 
