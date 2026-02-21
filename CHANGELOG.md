@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🐛 Bug Fixes
+
+- Dashboard view
+
+### 🚜 Refactor
+
+- Dashboard view
+
+### 📚 Documentation
+
+- Update changelog [skip ci]
+
 ## [1.2.3] - 2026-02-21
 
 ### 🚀 Features
