@@ -113,12 +113,16 @@
     async function load() {
         try {
             const res = await fetch(LOG_URL + '?t=' + Date.now());
-            allEntries = await res.json();
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const text = await res.text();
+            allEntries = text.trim() ? JSON.parse(text) : [];
             renderStats();
             renderTable();
         } catch(e) {
-            document.getElementById('empty').textContent = 'Impossibile caricare il log: ' + e.message;
-            document.getElementById('empty').style.display = 'block';
+            if (allEntries.length === 0) {
+                document.getElementById('empty').textContent = 'Nessun accesso registrato';
+                document.getElementById('empty').style.display = 'block';
+            }
         }
     }
 
@@ -195,6 +199,8 @@
         document.getElementById('lightbox').classList.remove('open');
     }
 
+    renderStats();
+    renderTable();
     load();
     setInterval(load, 30000); // auto-refresh ogni 30s
 </script>

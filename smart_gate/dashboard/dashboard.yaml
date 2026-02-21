@@ -1,32 +1,31 @@
-# Add this view to your Lovelace dashboard
-# Settings → Dashboards → edit your dashboard → add view
-# Or paste in raw YAML editor
-
-title: Smart Gate
-path: smart-gate
-icon: mdi:gate
-cards:
-  - type: vertical-stack
+views:
+  - title: Smart Gate
+    path: smart-gate
+    icon: mdi:gate
+    panel: true
     cards:
-      - type: picture-glance
-        title: Ingresso
-        camera_image: camera.ingresso_high_quality
-        camera_view: live
-        entities: []
-      - type: button
-        name: Apri Cancello
-        icon: mdi:gate-open
-        tap_action:
-          action: call-service
-          service: switch.turn_on
-          target:
-            entity_id: switch.cancello
-        icon_height: 48px
-        show_name: true
+      - type: vertical-stack
+        cards:
+          - type: picture-glance
+            title: Ingresso
+            camera_image: camera.ingresso_high_quality
+            camera_view: live
+            entities: []
+          - type: button
+            name: Apri Cancello
+            icon: mdi:gate-open
+            tap_action:
+              action: call-service
+              service: switch.turn_on
+              target:
+                entity_id: switch.cancello
+            icon_height: 48px
+            show_name: true
   - title: Storico Accessi
-    path: smart-gate-log
+    path: smart-gate-logs
     icon: mdi:history
+    panel: true
     cards:
       - type: iframe
         url: /local/smart_gate/dashboard.html
-        aspect_ratio: "100%"
+        aspect_ratio: 50%
