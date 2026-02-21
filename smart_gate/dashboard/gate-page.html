@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Gate</title>
+    <style>
+        :root {
+            --bg: #111318;
+            --surface: #1c1f26;
+            --border: #2a2d36;
+            --text: #e4e6f0;
+            --text-dim: #7b7f93;
+            --green: #2ecc71;
+            --radius: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            gap: 20px;
+        }
+
+        h1 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-dim);
+            letter-spacing: .05em;
+            text-transform: uppercase;
+        }
+
+        .camera-wrapper {
+            width: 100%;
+            max-width: 860px;
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: #000;
+            aspect-ratio: 16/9;
+            position: relative;
+        }
+
+        .camera-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .camera-label {
+            position: absolute;
+            top: 12px;
+            left: 14px;
+            background: rgba(0,0,0,.55);
+            color: #fff;
+            font-size: 12px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            backdrop-filter: blur(4px);
+        }
+
+        .btn {
+            width: 100%;
+            max-width: 860px;
+            padding: 18px;
+            border-radius: var(--radius);
+            border: none;
+            background: var(--green);
+            color: #fff;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: opacity .15s, transform .1s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn:active { opacity: .85; transform: scale(.98); }
+        .btn:disabled { background: var(--border); color: var(--text-dim); cursor: default; transform: none; }
+
+        .feedback {
+            font-size: 14px;
+            color: var(--text-dim);
+            min-height: 20px;
+            text-align: center;
+        }
+        .feedback.ok { color: var(--green); }
+        .feedback.err { color: #e74c3c; }
+    </style>
+</head>
+<body>
+
+<h1>🚗 Smart Gate — Ingresso</h1>
+
+<div class="camera-wrapper" id="camera-wrapper">
+    <img id="camera-feed" src="" alt="Camera ingresso" />
+    <span class="camera-label">● LIVE</span>
+</div>
+
+<button class="btn" id="open-btn" onclick="openGate()">
+    🔓 Apri Cancello
+</button>
+
+<div class="feedback" id="feedback"></div>
+
+<script>
+    // --- CONFIG ---
+    const CAMERA_ENTITY  = "camera.ingresso_high_quality";
+    const SWITCH_ENTITY  = "switch.cancello";
+    const HASS_URL       = window.location.origin; // same origin as HA
+    // Long-lived access token — generate one in your HA profile
+    const TOKEN          = localStorage.getItem("ha_token") || "";
+
+    // --- Camera snapshot polling ---
+    // img src can't send Authorization headers, so we fetch snapshots
+    // via the API and update the img src with a blob URL every second
+    const feed = document.getElementById("camera-feed");
+    let snapshotUrl = null;
+
+    async function refreshSnapshot() {
+        if (!TOKEN) return;
+        try {
+            const res = await fetch(`${HASS_URL}/api/camera_proxy/${CAMERA_ENTITY}`, {
+                headers: { "Authorization": `Bearer ${TOKEN}` }
+            });
+            if (!res.ok) return;
+            const blob = await res.blob();
+            const newUrl = URL.createObjectURL(blob);
+            feed.src = newUrl;
+            if (snapshotUrl) URL.revokeObjectURL(snapshotUrl);
+            snapshotUrl = newUrl;
+        } catch(e) {}
+    }
+
+    refreshSnapshot();
+    setInterval(refreshSnapshot, 500);
+
+    // --- Open gate ---
+    async function openGate() {
+        const btn = document.getElementById("open-btn");
+        const feedback = document.getElementById("feedback");
+
+        btn.disabled = true;
+        btn.textContent = "⏳ Apertura in corso...";
+        feedback.textContent = "";
+        feedback.className = "feedback";
+
+        try {
+            const res = await fetch(`${HASS_URL}/api/services/switch/turn_on`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${TOKEN}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ entity_id: SWITCH_ENTITY })
+            });
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            feedback.textContent = "✅ Cancello aperto";
+            feedback.className = "feedback ok";
+            btn.textContent = "✅ Aperto";
+
+            // Re-enable after 5s (typical gate open duration)
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = "🔓 Apri Cancello";
+                feedback.textContent = "";
+                feedback.className = "feedback";
+            }, 2000);
+
+        } catch(e) {
+            feedback.textContent = `⚠️ Errore: ${e.message}`;
+            feedback.className = "feedback err";
+            btn.disabled = false;
+            btn.innerHTML = "🔓 Apri Cancello";
+        }
+    }
+
+    // --- Token setup ---
+    if (!TOKEN) {
+        document.getElementById("token-screen").style.display = "flex";
+        document.getElementById("camera-wrapper").style.display = "none";
+        document.getElementById("open-btn").style.display = "none";
+    }
+
+    function saveToken() {
+        const t = document.getElementById("token-input").value.trim();
+        if (!t) return;
+        localStorage.setItem("ha_token", t);
+        location.reload();
+    }
+
+    document.getElementById("token-input")?.addEventListener("keydown", e => {
+        if (e.key === "Enter") saveToken();
+    });
+</script>
+<div id="token-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:99;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;">
+    <h2 style="font-size:16px;color:var(--text-dim)">🔑 Inserisci il Long-Lived Access Token</h2>
+    <p style="font-size:13px;color:var(--text-dim);text-align:center;max-width:400px;">Generalo in HA → Profilo → Long-Lived Access Tokens.<br>Verrà salvato nel browser.</p>
+    <input id="token-input" type="password" placeholder="eyJ..." style="width:100%;max-width:400px;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;outline:none;" />
+    <button onclick="saveToken()" style="padding:12px 32px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;">Salva e continua</button>
+</div>
+</body>
+</html>

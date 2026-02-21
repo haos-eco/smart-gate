@@ -4,28 +4,14 @@ views:
     icon: mdi:gate
     panel: true
     cards:
-      - type: vertical-stack
-        cards:
-          - type: picture-glance
-            title: Ingresso
-            camera_image: camera.ingresso_high_quality
-            camera_view: live
-            entities: []
-          - type: button
-            name: Apri Cancello
-            icon: mdi:gate-open
-            tap_action:
-              action: call-service
-              service: switch.turn_on
-              target:
-                entity_id: switch.cancello
-            icon_height: 48px
-            show_name: true
+      - type: iframe
+        url: /local/smart_gate/dashboard/gate-page.html
+        aspect_ratio: 100%
   - title: Storico Accessi
     path: smart-gate-logs
     icon: mdi:history
     panel: true
     cards:
       - type: iframe
-        url: /local/smart_gate/dashboard.html
-        aspect_ratio: 50%
+        url: /local/smart_gate/dashboard/logs-page.html
+        aspect_ratio: 100%

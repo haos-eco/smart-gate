@@ -6,21 +6,24 @@ Visual dashboard for access history with real-time statistics, photo thumbnails 
 
 ```
 dashboard/
-├── dashboard.html     # Standalone HTML dashboard served via /local/
+├── gate-page.html     # HTML Gate page served via /local/
+├── logs-page.html     # HTML Logs page served via /local/
 └── dashboard.yaml     # Lovelace view definitions
 ```
 
 ## Setup
 
-### 1. Copy dashboard to HA www
+### 1. Copy html pages to HA www
 
 ```bash
-cp dashboard/dashboard.html /config/www/smart_gate/dashboard.html
+cp dashboard/gate-page.html /config/www/smart_gate/dashboard/gate-page.html
+cp dashboard/logs-page.html /config/www/smart_gate/dashboard/logs-page.html
 ```
 
 The file will be served at:
 ```
-http://<ha-ip>:8123/local/smart_gate/dashboard.html
+http://<ha-ip>:8123/local/smart_gate/dashboard/gate-page.html
+http://<ha-ip>:8123/local/smart_gate/dashboard/logs-page.html
 ```
 
 ### 2. Add Lovelace views
