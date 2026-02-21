@@ -151,6 +151,7 @@ def main():
             best_yolo = 0.0
             best_ocr = 0.0
             best_is_complete = False
+            best_is_exact = False
 
             for i in range(3):
                 plate, yolo_score, ocr_conf = capture_and_recognize(
@@ -163,16 +164,20 @@ def main():
                 if plate:
                     print(f"  Attempt {i+1}/3: '{plate}' (YOLO: {yolo_score:.3f}, OCR: {ocr_conf:.3f})")
                     is_complete = is_complete_plate(plate)
+                    is_exact = plate in allowed_plates
                     combined = yolo_score + ocr_conf
                     best_combined = best_yolo + best_ocr
-                    # A complete plate always beats a partial one
-                    # Among equal completeness, pick best combined score
-                    if (is_complete and not best_is_complete) or \
-                            (is_complete == best_is_complete and combined > best_combined):
+                    # Exact whitelist match always wins
+                    # Then complete plate over partial
+                    # Then best combined score as tiebreaker
+                    if (is_exact and not best_is_exact) or \
+                            (is_exact == best_is_exact and is_complete and not best_is_complete) or \
+                            (is_exact == best_is_exact and is_complete == best_is_complete and combined > best_combined):
                         best_plate = plate
                         best_yolo = yolo_score
                         best_ocr = ocr_conf
                         best_is_complete = is_complete
+                        best_is_exact = is_exact
                 else:
                     print(f"  Attempt {i+1}/3: No plate detected")
 
@@ -186,16 +191,18 @@ def main():
 
             print(f"📊 Best detection: '{best_plate}' (YOLO: {best_yolo:.3f}, OCR: {best_ocr:.3f})")
 
-            # Quality check: require minimum scores to proceed
-            if best_yolo < min_yolo_score:
-                print(f"⚠️  YOLO score too low ({best_yolo:.3f} < {min_yolo_score}) — gate stays closed")
-                time.sleep(1)
-                continue
+            # Skip quality gates for exact whitelist matches — if the plate is already
+            # in the whitelist, low OCR confidence is irrelevant
+            if not best_is_exact:
+                if best_yolo < min_yolo_score:
+                    print(f"⚠️  YOLO score too low ({best_yolo:.3f} < {min_yolo_score}) — gate stays closed")
+                    time.sleep(1)
+                    continue
 
-            if best_ocr < min_ocr_confidence:
-                print(f"⚠️  OCR confidence too low ({best_ocr:.3f} < {min_ocr_confidence}) — gate stays closed")
-                time.sleep(1)
-                continue
+                if best_ocr < min_ocr_confidence:
+                    print(f"⚠️  OCR confidence too low ({best_ocr:.3f} < {min_ocr_confidence}) — gate stays closed")
+                    time.sleep(1)
+                    continue
 
             if keep_history:
                 os.makedirs(history_dir, exist_ok=True)
