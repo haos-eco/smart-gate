@@ -3,7 +3,6 @@ import threading
 import requests
 from constants import HASS_URL, HEADERS
 
-
 def send_visitor_notification(notify_devices: list, snapshot_path: str, camera_entity: str, notification_sound: str):
     """
     Send actionable notification to one or more devices.
@@ -20,6 +19,7 @@ def send_visitor_notification(notify_devices: list, snapshot_path: str, camera_e
         "message": "C'è qualcuno all'ingresso",
         "data": {
             "image": image_url,
+            # Long press → shows snapshot + open button
             "actions": [
                 {
                     "action": "SMART_GATE_OPEN",
@@ -27,8 +27,8 @@ def send_visitor_notification(notify_devices: list, snapshot_path: str, camera_e
                     "destructive": False,
                 }
             ],
-            "entity_id": camera_entity,
-            "url": f"entityId:{camera_entity}",
+            # Tap → opens /lovelace/smart-gate (camera view + open button)
+            "url": "/lovelace/smart-gate",
             "push": {
                 "sound": notification_sound
             }
@@ -41,7 +41,6 @@ def send_visitor_notification(notify_devices: list, snapshot_path: str, camera_e
             print(f"🔔 Notification sent to {service}")
         except Exception as e:
             print(f"⚠️  Failed to notify {service}: {e}")
-
 
 def poll_notification_action(action_id: str = "SMART_GATE_OPEN", timeout: int = 120) -> bool:
     """
@@ -68,7 +67,6 @@ def poll_notification_action(action_id: str = "SMART_GATE_OPEN", timeout: int = 
         pass
     return False
 
-
 def handle_notification_action(gate_switch: str, debug: bool = False):
     """Background thread: wait for SMART_GATE_OPEN action, open gate if received."""
     from homeassistant import switch_on
@@ -80,7 +78,6 @@ def handle_notification_action(gate_switch: str, debug: bool = False):
     else:
         if debug:
             print("🔔 Notification action timeout — no response")
-
 
 def start_notification_listener(gate_switch: str, debug: bool = False) -> threading.Thread:
     """Spawn and return a daemon thread listening for the open gate notification action."""

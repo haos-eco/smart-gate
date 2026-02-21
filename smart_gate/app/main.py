@@ -75,6 +75,7 @@ def main():
     motion_off_since = None       # timestamp when motion went OFF
     visitor_notified = False      # avoid sending multiple notifications per stop event
     notification_thread = None    # background thread listening for open action
+    vehicle_detected = False      # True if YOLO found a plate during last motion ON session
 
     print("Smart Gate started. Watching motion:", motion_entity)
     if debug:
@@ -103,18 +104,20 @@ def main():
                     motion_off_since = time.time()
                     visitor_notified = False
                 elif state == "on":
-                    # New motion — reset stop timer and notification flag
+                    # New motion — reset stop timer, notification flag and detection flag
                     motion_off_since = None
                     visitor_notified = False
+                    vehicle_detected = False
 
                 last_motion = state
 
             # --- Visitor notification: vehicle stopped for visitor_stop_sec ---
             if (
-                    notify_services
+                    _notify_services
                     and state == "off"
                     and motion_off_since is not None
                     and not visitor_notified
+                    and vehicle_detected
                     and (time.time() - motion_off_since) >= visitor_stop_sec
             ):
                 print(f"🔔 Vehicle stopped for {visitor_stop_sec}s — sending visitor notification...")
@@ -162,6 +165,7 @@ def main():
                 )
 
                 if plate:
+                    vehicle_detected = True
                     print(f"  Attempt {i+1}/3: '{plate}' (YOLO: {yolo_score:.3f}, OCR: {ocr_conf:.3f})")
                     is_complete = is_complete_plate(plate)
                     is_exact = plate in allowed_plates
