@@ -7,11 +7,19 @@ All notable changes to this project will be documented in this file.
 ### 🐛 Bug Fixes
 
 - Main variable error
+- Exact plate match doesn't require score
+- Vehicle detection, smart notification long press shows snapshot and now live camera now
 
 ### 📚 Documentation
 
 - Update changelog [skip ci]
 - Update changelog [skip ci]
+- Update changelog [skip ci]
+
+### 🧪 Testing
+
+- Adds notifications tests
+- Fix hass url
 
 ### ⚙️ Miscellaneous Tasks
 
