@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [1.2.3] - 2026-02-21
 
 ### 🚀 Features
 
@@ -14,9 +14,11 @@ All notable changes to this project will be documented in this file.
 - Exact plate match doesn't require score
 - Vehicle detection, smart notification long press shows snapshot and now live camera now
 - Remove extra useless camera snapshot
+- Headlight overexposure
 
 ### 📚 Documentation
 
+- Update changelog [skip ci]
 - Update changelog [skip ci]
 - Update changelog [skip ci]
 - Update changelog [skip ci]
