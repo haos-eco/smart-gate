@@ -20,7 +20,6 @@ _SR_MODEL = None
 def download_sr_model():
     """Download AI super-resolution model if not present"""
     model_dir = os.path.dirname(_SR_MODEL_PATH)
-
     try:
         os.makedirs(model_dir, exist_ok=True)
     except OSError as e:
@@ -69,11 +68,9 @@ def download_sr_model():
                 continue
 
             print(f"   ✅ Downloaded successfully ({size_mb:.2f}MB)")
-
             model_type_file = _SR_MODEL_PATH.replace('.pb', '.type')
             with open(model_type_file, 'w') as f:
                 f.write(model_info['type'])
-
             return True
 
         except Exception as e:
@@ -82,12 +79,11 @@ def download_sr_model():
                 os.remove(_SR_MODEL_PATH)
             continue
 
-    print(f"⚠️  Could not download AI SR model from any source")
-    print(f"   Will use bicubic fallback")
+    print(f"⚠️  Could not download AI SR model — will use bicubic fallback")
     return False
 
+
 def get_model_type():
-    """Get the type of downloaded model"""
     model_type_file = _SR_MODEL_PATH.replace('.pb', '.type')
     if os.path.exists(model_type_file):
         with open(model_type_file, 'r') as f:
@@ -107,16 +103,11 @@ def get_sr_model():
     try:
         sr = cv2.dnn_superres.DnnSuperResImpl_create()
         sr.readModel(_SR_MODEL_PATH)
-
-        model_type = get_model_type()
-        sr.setModel(model_type, 2)  # 2x scale
-
+        sr.setModel(get_model_type(), 2)
         _SR_MODEL = sr
         return _SR_MODEL
-
     except Exception as e:
         print(f"⚠️  Failed to load SR model: {e}")
-        print(f"   Will use bicubic fallback")
         return None
 
 def apply_roi(img_bgr, roi):
@@ -126,7 +117,6 @@ def apply_roi(img_bgr, roi):
         img_bgr: BGR image
         roi: [x, y, w, h] in relative floats (0.0 to 1.0)
     """
-
     h, w = img_bgr.shape[:2]
     rx, ry, rw, rh = roi
     x1 = max(0, int(rx * w))
@@ -155,8 +145,7 @@ def fix_overexposure(img_bgr):
     l, a, b = cv2.split(lab)
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     l = clahe.apply(l)
-    lab = cv2.merge([l, a, b])
-    return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+    return cv2.cvtColor(cv2.merge([l, a, b]), cv2.COLOR_LAB2BGR)
 
 def crop_white_area(img_bgr):
     """Crop only white area of plate (removes EU blue strip)"""
@@ -178,12 +167,66 @@ def crop_white_area(img_bgr):
 
     return img_bgr
 
+
+def is_overexposed(img_bgr, threshold: float = 200.0) -> bool:
+    """Detect if plate crop is overexposed by headlights.
+
+    When headlights hit the plate directly, most pixels saturate to ~255
+    making characters invisible to OCR.
+    """
+    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+    mean_brightness = np.mean(gray)
+    return mean_brightness > threshold
+
+def fix_headlight_overexposure(img_bgr, debug: bool = False) -> np.ndarray:
+    """Recover license plate characters from headlight overexposure.
+
+    Pipeline:
+    1. Gamma correction (< 1.0) — pulls saturated highlights back into readable range
+    2. CLAHE on L channel — recovers local contrast after gamma
+    3. Invert if background is still predominantly light — EasyOCR reads
+       dark-on-light better than light-on-dark
+    """
+    # 1. Gamma correction — compresses highlights
+    # gamma=0.4: pixel 230 → ~162, pixel 255 → 255 (unchanged at peak)
+    gamma = 0.4
+    lut = np.array([
+        min(255, int((i / 255.0) ** gamma * 255))
+        for i in range(256)
+    ], dtype=np.uint8)
+    img_bgr = cv2.LUT(img_bgr, lut)
+
+    if debug:
+        mean = np.mean(cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY))
+        print(f"Headlight fix: gamma={gamma}, mean brightness after: {mean:.1f}")
+
+    # 2. CLAHE — local contrast recovery
+    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(4, 4))
+    l = clahe.apply(l)
+    img_bgr = cv2.cvtColor(cv2.merge([l, a, b]), cv2.COLOR_LAB2BGR)
+
+    # 3. Invert if background is still predominantly light
+    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+    if np.mean(gray) > 127:
+        img_bgr = cv2.bitwise_not(img_bgr)
+        if debug:
+            print("Headlight fix: inverted (light background detected)")
+
+    return img_bgr
+
 def enhance_plate_ai_sr(img_bgr, debug=False):
-    # AI super-resolution with minimal post-processing
-
+    """AI super-resolution with overexposure correction and minimal post-processing."""
     h, w = img_bgr.shape[:2]
-    sr = get_sr_model()
 
+    # Fix headlight overexposure before SR — saturated pixels kill OCR accuracy
+    if is_overexposed(img_bgr):
+        if debug:
+            print(f"⚠️  Overexposed crop detected (mean > 200) — applying headlight fix")
+        img_bgr = fix_headlight_overexposure(img_bgr, debug=debug)
+
+    sr = get_sr_model()
     if sr is not None:
         try:
             img_bgr = sr.upsample(img_bgr)
@@ -198,7 +241,7 @@ def enhance_plate_ai_sr(img_bgr, debug=False):
         if debug:
             print(f"Bicubic 2x: {w}x{h} → {img_bgr.shape[1]}x{img_bgr.shape[0]}")
 
-    # Upscale to 400px height (if needed)
+    # Upscale to 400px height if needed
     h_new, w_new = img_bgr.shape[:2]
     if h_new < 400:
         scale = 400 / h_new
