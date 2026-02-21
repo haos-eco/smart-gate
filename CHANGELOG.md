@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🚀 Features
+
+- Track access logs + ha dashboard with access logs
+
 ### 🐛 Bug Fixes
 
 - Main variable error
@@ -17,6 +21,7 @@ All notable changes to this project will be documented in this file.
 - Update changelog [skip ci]
 - Update changelog [skip ci]
 - Update changelog [skip ci]
+- Update changelog [skip ci]
 
 ### 🧪 Testing
 
@@ -26,6 +31,7 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Fix config.yaml
+- Bump version to 1.2.3
 
 ## [1.2.2] - 2026-02-20
 
