@@ -1,5 +1,7 @@
 .idea
 .venv
+.env*
+!.env.example
 
 **/models/**/*
 **/tests/fixtures/plates/*

@@ -2,6 +2,7 @@ import time
 import threading
 import requests
 from constants import HASS_URL, HEADERS
+from homeassistant import call_service
 
 def send_visitor_notification(notify_devices: list, snapshot_path: str, camera_entity: str, notification_sound: str):
     """
@@ -10,10 +11,7 @@ def send_visitor_notification(notify_devices: list, snapshot_path: str, camera_e
     snapshot_path: absolute path on HA filesystem e.g. /config/www/smart_gate/snapshot/latest.jpg
     The image is served via /local/... mapped from /config/www/...
     """
-    from homeassistant import call_service
-
     image_url = snapshot_path.replace("/config/www/", "/local/")
-
     payload = {
         "title": "🚗 Smart Gate",
         "message": "C'è qualcuno all'ingresso",
