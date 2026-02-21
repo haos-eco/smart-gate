@@ -9,9 +9,11 @@ All notable changes to this project will be documented in this file.
 - Main variable error
 - Exact plate match doesn't require score
 - Vehicle detection, smart notification long press shows snapshot and now live camera now
+- Remove extra useless camera snapshot
 
 ### 📚 Documentation
 
+- Update changelog [skip ci]
 - Update changelog [skip ci]
 - Update changelog [skip ci]
 - Update changelog [skip ci]
