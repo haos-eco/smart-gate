@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Gate — Accessi</title>
+    <style>
+        :root {
+            --bg: #111318;
+            --surface: #1c1f26;
+            --border: #2a2d36;
+            --text: #e4e6f0;
+            --text-dim: #7b7f93;
+            --green: #2ecc71;
+            --red: #e74c3c;
+            --yellow: #f39c12;
+            --blue: #3498db;
+            --radius: 10px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; padding: 16px; }
+
+        h1 { font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        h1 span { font-size: 22px; }
+
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+        .stat-value { font-size: 26px; font-weight: 700; line-height: 1; }
+        .stat-label { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+        .stat-value.green { color: var(--green); }
+        .stat-value.red { color: var(--red); }
+        .stat-value.yellow { color: var(--yellow); }
+        .stat-value.blue { color: var(--blue); }
+
+        .filters { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+        .filter-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; transition: all .15s; }
+        .filter-btn:hover { border-color: var(--blue); color: var(--text); }
+        .filter-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 10px 12px; font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: var(--surface); }
+
+        .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge.opened { background: rgba(46,204,113,.15); color: var(--green); }
+        .badge.rejected { background: rgba(231,76,60,.15); color: var(--red); }
+        .badge.unknown { background: rgba(243,156,18,.15); color: var(--yellow); }
+
+        .match-type { font-size: 11px; color: var(--text-dim); background: var(--border); padding: 2px 7px; border-radius: 4px; }
+
+        .plate { font-family: "SF Mono", "Fira Code", monospace; font-weight: 700; font-size: 15px; letter-spacing: .05em; }
+
+        .thumb { width: 80px; height: 45px; object-fit: cover; border-radius: 5px; cursor: pointer; background: var(--border); }
+        .no-img { width: 80px; height: 45px; border-radius: 5px; background: var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-dim); font-size: 18px; }
+
+        .scores { font-size: 12px; color: var(--text-dim); }
+
+        /* Lightbox */
+        .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 100; align-items: center; justify-content: center; }
+        .lightbox.open { display: flex; }
+        .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: var(--radius); }
+        .lightbox-close { position: absolute; top: 20px; right: 24px; font-size: 28px; cursor: pointer; color: #fff; }
+
+        .empty { text-align: center; padding: 48px; color: var(--text-dim); }
+        .timestamp { font-size: 12px; color: var(--text-dim); }
+        .reason { font-size: 12px; color: var(--text-dim); max-width: 180px; }
+    </style>
+</head>
+<body>
+
+<h1><span>🚗</span> Smart Gate — Storico Accessi</h1>
+
+<div class="stats" id="stats"></div>
+
+<div class="filters">
+    <button class="filter-btn active" onclick="setFilter('all')">Tutti</button>
+    <button class="filter-btn" onclick="setFilter('opened')">✅ Aperti</button>
+    <button class="filter-btn" onclick="setFilter('rejected')">⛔ Rifiutati</button>
+    <button class="filter-btn" onclick="setFilter('unknown')">❓ Sconosciuti</button>
+</div>
+
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+    <table>
+        <thead>
+        <tr>
+            <th>Foto</th>
+            <th>Targa</th>
+            <th>Stato</th>
+            <th>Tipo match</th>
+            <th>YOLO / OCR</th>
+            <th>Motivo</th>
+            <th>Data/Ora</th>
+        </tr>
+        </thead>
+        <tbody id="log-body"></tbody>
+    </table>
+    <div class="empty" id="empty" style="display:none">Nessun accesso registrato</div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <span class="lightbox-close">✕</span>
+    <img id="lightbox-img" src="" alt="" />
+</div>
+
+<script>
+    let allEntries = [];
+    let currentFilter = 'all';
+
+    const LOG_URL = '/local/smart_gate/access_log.json';
+
+    async function load() {
+        try {
+            const res = await fetch(LOG_URL + '?t=' + Date.now());
+            allEntries = await res.json();
+            renderStats();
+            renderTable();
+        } catch(e) {
+            document.getElementById('empty').textContent = 'Impossibile caricare il log: ' + e.message;
+            document.getElementById('empty').style.display = 'block';
+        }
+    }
+
+    function renderStats() {
+        const opened  = allEntries.filter(e => e.status === 'opened').length;
+        const rejected = allEntries.filter(e => e.status === 'rejected').length;
+        const unknown  = allEntries.filter(e => e.status === 'unknown').length;
+        const plates   = new Set(allEntries.map(e => e.plate)).size;
+
+        document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="stat-value green">${opened}</div><div class="stat-label">Aperture</div></div>
+    <div class="stat"><div class="stat-value red">${rejected}</div><div class="stat-label">Rifiutati</div></div>
+    <div class="stat"><div class="stat-value yellow">${unknown}</div><div class="stat-label">Sconosciuti</div></div>
+    <div class="stat"><div class="stat-value blue">${plates}</div><div class="stat-label">Targhe uniche</div></div>
+  `;
+    }
+
+    function renderTable() {
+        const entries = currentFilter === 'all' ? allEntries : allEntries.filter(e => e.status === currentFilter);
+        const body = document.getElementById('log-body');
+        const empty = document.getElementById('empty');
+
+        if (entries.length === 0) {
+            body.innerHTML = '';
+            empty.style.display = 'block';
+            empty.textContent = 'Nessun risultato';
+            return;
+        }
+        empty.style.display = 'none';
+
+        body.innerHTML = entries.map(e => `
+    <tr>
+      <td>
+        ${e.snapshot_url
+            ? `<img class="thumb" src="${e.snapshot_url}" alt="" onclick="openLightbox('${e.snapshot_url}')" />`
+            : `<div class="no-img">📷</div>`}
+      </td>
+      <td>
+        <span class="plate">${e.plate || '—'}</span>
+        ${e.matched_plate && e.matched_plate !== e.plate ? `<br><span style="font-size:11px;color:var(--text-dim)">→ ${e.matched_plate}</span>` : ''}
+      </td>
+      <td><span class="badge ${e.status}">${statusLabel(e.status)}</span></td>
+      <td><span class="match-type">${matchLabel(e.match_type)}</span></td>
+      <td class="scores">${e.yolo_score.toFixed(2)} / ${e.ocr_conf.toFixed(2)}</td>
+      <td class="reason">${e.reason || '—'}</td>
+      <td class="timestamp">${formatDate(e.timestamp)}</td>
+    </tr>
+  `).join('');
+    }
+
+    function statusLabel(s) {
+        return { opened: '✅ Aperto', rejected: '⛔ Rifiutato', unknown: '❓ Sconosciuto' }[s] || s;
+    }
+    function matchLabel(m) {
+        return { exact: 'Esatto', fuzzy: 'Fuzzy', none: 'Nessuno' }[m] || m;
+    }
+    function formatDate(ts) {
+        const d = new Date(ts);
+        return d.toLocaleDateString('it-IT') + '<br>' + d.toLocaleTimeString('it-IT');
+    }
+
+    function setFilter(f) {
+        currentFilter = f;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+        renderTable();
+    }
+
+    function openLightbox(url) {
+        document.getElementById('lightbox-img').src = url;
+        document.getElementById('lightbox').classList.add('open');
+    }
+    function closeLightbox() {
+        document.getElementById('lightbox').classList.remove('open');
+    }
+
+    load();
+    setInterval(load, 30000); // auto-refresh ogni 30s
+</script>
+</body>
+</html>

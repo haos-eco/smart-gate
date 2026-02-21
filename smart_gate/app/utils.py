@@ -2,6 +2,7 @@ import os
 import json
 import cv2
 import re as _re
+from constants import LOG_PATH
 
 def get_options():
     """Load options from Home Assistant supervisor"""
@@ -17,6 +18,20 @@ def ensure_dir(path: str):
 def is_complete_plate(p: str) -> bool:
     """Returns True if plate matches full Italian format AA123AA"""
     return bool(_re.match(r'^[A-Z]{2}\d{3}[A-Z]{2}$', p))
+
+def load_logs() -> list:
+    if not os.path.exists(LOG_PATH):
+        return []
+    try:
+        with open(LOG_PATH, "r") as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+def save_logs(entries: list):
+    os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
+    with open(LOG_PATH, "w") as f:
+        json.dump(entries, f, indent=2)
 
 def validate_model(model_path: str) -> bool:
     if not os.path.exists(model_path):

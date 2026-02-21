@@ -3,6 +3,8 @@ import time
 import cv2
 
 from utils import get_options, is_complete_plate, validate_model, capture_and_recognize, fuzzy_match
+from access_log import log_event
+
 
 def main():
     opt = get_options()
@@ -204,11 +206,15 @@ def main():
             if not best_is_exact:
                 if best_yolo < min_yolo_score:
                     print(f"⚠️  YOLO score too low ({best_yolo:.3f} < {min_yolo_score}) — gate stays closed")
+                    log_event(best_plate, "rejected", last_vehicle_snapshot or snapshot_path, "none",
+                              best_yolo, best_ocr, reason=f"YOLO score too low ({best_yolo:.3f})")
                     time.sleep(1)
                     continue
 
                 if best_ocr < min_ocr_confidence:
                     print(f"⚠️  OCR confidence too low ({best_ocr:.3f} < {min_ocr_confidence}) — gate stays closed")
+                    log_event(best_plate, "rejected", last_vehicle_snapshot or snapshot_path, "none",
+                              best_yolo, best_ocr, reason=f"OCR confidence too low ({best_ocr:.3f})")
                     time.sleep(1)
                     continue
 
@@ -224,13 +230,17 @@ def main():
             if matched is None:
                 if debug:
                     print(f"❌ Plate '{best_plate}' not in whitelist (no fuzzy match)")
+                log_event(best_plate, "unknown", last_vehicle_snapshot or snapshot_path, "none",
+                          best_yolo, best_ocr, reason="Not in whitelist")
                 time.sleep(2)
                 continue
 
             if distance == 0:
                 # Exact match — open immediately, GPS not required
-                print(f"✅ Exact match '{best_plate}' → gate opening")
                 switch_on(gate_switch)
+                print(f"✅ Exact match '{best_plate}' → gate opening")
+                log_event(best_plate, "opened", last_vehicle_snapshot or snapshot_path, "exact match",
+                          best_yolo, best_ocr, matched_plate=matched, reason="Plate in whitelist")
                 last_open = now
 
             else:
@@ -239,6 +249,8 @@ def main():
 
                 if not person_entity:
                     print(f"⛔ Fuzzy match '{best_plate}' ≈ '{matched}' (distance: {distance}) but no person_entity configured — gate stays closed")
+                    log_event(best_plate, "rejected", last_vehicle_snapshot or snapshot_path, "fuzzy",
+                              best_yolo, best_ocr, matched_plate=matched, reason="No person_entity configured")
                     time.sleep(2)
                     continue
 
@@ -253,9 +265,13 @@ def main():
                 if person_state == "home":
                     print(f"✅ Fuzzy match + {person_entity} home → gate opening (read '{best_plate}', matched '{matched}')")
                     switch_on(gate_switch)
+                    log_event(best_plate, "opened", last_vehicle_snapshot or snapshot_path, "fuzzy",
+                              best_yolo, best_ocr, matched_plate=matched)
                     last_open = now
                 else:
                     print(f"⛔ Fuzzy match '{best_plate}' ≈ '{matched}' but {person_entity} not home — gate stays closed")
+                    log_event(best_plate, "rejected", last_vehicle_snapshot or snapshot_path, "fuzzy",
+                              best_yolo, best_ocr, matched_plate=matched, reason=f"{person_entity} not home")
 
             time.sleep(2)
 
