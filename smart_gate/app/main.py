@@ -76,6 +76,7 @@ def main():
     visitor_notified = False      # avoid sending multiple notifications per stop event
     notification_thread = None    # background thread listening for open action
     vehicle_detected = False      # True if YOLO found a plate during last motion ON session
+    last_vehicle_snapshot = None  # path of snapshot taken when vehicle was detected
 
     print("Smart Gate started. Watching motion:", motion_entity)
     if debug:
@@ -90,7 +91,7 @@ def main():
 
     while True:
         try:
-            from homeassistant import get_state, camera_snapshot, switch_on
+            from homeassistant import get_state, switch_on
             from notifications import send_visitor_notification
 
             state = get_state(motion_entity)
@@ -108,6 +109,7 @@ def main():
                     motion_off_since = None
                     visitor_notified = False
                     vehicle_detected = False
+                    last_vehicle_snapshot = None
 
                 last_motion = state
 
@@ -122,8 +124,9 @@ def main():
             ):
                 print(f"🔔 Vehicle stopped for {visitor_stop_sec}s — sending visitor notification...")
                 try:
-                    camera_snapshot(camera_entity, snapshot_path)
-                    send_visitor_notification(_notify_services, snapshot_path, camera_entity, notification_sound)
+                    # Use snapshot taken during recognition — car was visible then
+                    notification_snapshot = last_vehicle_snapshot or snapshot_path
+                    send_visitor_notification(_notify_services, notification_snapshot, camera_entity, notification_sound)
                     visitor_notified = True
                     print("🔔 Visitor notification sent")
 
@@ -149,7 +152,7 @@ def main():
 
             print("Motion detected! Multi-attempt recognition...")
 
-            # 3 attempts — prefer complete plates (AA123AA), then best combined score
+            # 3 attempts — priority: exact whitelist match > complete plate (AA123AA) > best combined score
             best_plate = None
             best_yolo = 0.0
             best_ocr = 0.0
@@ -166,6 +169,7 @@ def main():
 
                 if plate:
                     vehicle_detected = True
+                    last_vehicle_snapshot = snapshot_path  # freeze snapshot taken during recognition
                     print(f"  Attempt {i+1}/3: '{plate}' (YOLO: {yolo_score:.3f}, OCR: {ocr_conf:.3f})")
                     is_complete = is_complete_plate(plate)
                     is_exact = plate in allowed_plates
