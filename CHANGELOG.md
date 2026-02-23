@@ -2,7 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [2.0.0] - 2026-02-23
+
+### 🐛 Bug Fixes
+
+- Add missing dependencies in dockerfile
+
+### 📚 Documentation
+
+- Update changelog [skip ci]
 
 ### ⚙️ Miscellaneous Tasks
 
