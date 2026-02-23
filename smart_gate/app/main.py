@@ -172,6 +172,7 @@ def main():
             best_ocr = 0.0
             best_is_complete = False
             best_is_exact = False
+            early_exit = False
 
             for i in range(3):
                 plate, yolo_score, ocr_conf = capture_and_recognize(
@@ -203,18 +204,27 @@ def main():
                         best_ocr = ocr_conf
                         best_is_complete = is_complete
                         best_is_exact = is_exact
+
+                    if is_exact:
+                        print(f"  ⚡ Early exit: exact match at attempt {i+1}/3")
+                        early_exit = True
+                        break
                 else:
                     print(f"  Attempt {i+1}/3: No plate detected")
 
                 if i < 2:
-                    time.sleep(0.5)
+                    sleep_time = 0.1 if best_plate else 0.5
+                    time.sleep(sleep_time)
 
             if not best_plate:
                 print("❌ No plates detected in any attempt")
                 time.sleep(1)
                 continue
 
-            print(f"📊 Best detection: '{best_plate}' (YOLO: {best_yolo:.3f}, OCR: {best_ocr:.3f})")
+            if early_exit:
+                print(f"📊 Best detection: '{best_plate}' (YOLO: {best_yolo:.3f}, OCR: {best_ocr:.3f}) [early exit]")
+            else:
+                print(f"📊 Best detection: '{best_plate}' (YOLO: {best_yolo:.3f}, OCR: {best_ocr:.3f})")
 
             # Skip quality gates for exact whitelist matches — if the plate is already
             # in the whitelist, low OCR confidence is irrelevant
@@ -253,10 +263,16 @@ def main():
             if distance == 0:
                 # Exact match — open immediately, GPS not required
                 switch_on(gate_switch)
-                print(f"✅ Exact match '{best_plate}' → gate opening")
-                log_event(best_plate, "opened", last_vehicle_snapshot or snapshot_path, "exact match",
-                          best_yolo, best_ocr, matched_plate=matched, reason="Plate in whitelist")
                 last_open = now
+                print(f"✅ Exact match '{best_plate}' → gate opening")
+                import threading
+                threading.Thread(
+                    target=log_event,
+                    args=(best_plate, "opened", last_vehicle_snapshot or snapshot_path, "exact match",
+                          best_yolo, best_ocr),
+                    kwargs={"matched_plate": matched, "reason": "Plate in whitelist"},
+                    daemon=True
+                ).start()
 
             else:
                 # Fuzzy match — check the person specifically linked to this plate
