@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 📚 Documentation
+
+- Update changelog [skip ci]
+
+### ⚙️ Miscellaneous Tasks
+
+- Fix readme + update version in repository.json
+
 ## [2.0.0] - 2026-02-23
 
 ### 🐛 Bug Fixes
