@@ -5,12 +5,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Layer for heavy dependencies (torch via easyocr) — change rarely
+# Torch CPU-only — heaviest layer, changes rarely (~800MB)
+RUN pip install --no-cache-dir \
+    torch~=2.4.0 --index-url https://download.pytorch.org/whl/cpu
+
+# ML dependencies — changes occasionally
 RUN pip install --no-cache-dir \
     numpy==1.26.4 \
-    easyocr~=1.7.2
+    easyocr~=1.7.2 \
+    transformers~=4.44.0
 
-# Layer for light dependencies - change frequently
+# Light dependencies — change frequently
 RUN pip install --no-cache-dir \
     onnxruntime==1.18.0 \
     opencv-contrib-python-headless==4.10.0.84 \
