@@ -111,11 +111,10 @@ def get_sr_model():
         return None
 
 def apply_roi(img_bgr, roi):
-    """Apply region of interest to image
-
+    """Apply region of interest to image.
     Args:
         img_bgr: BGR image
-        roi: [x, y, w, h] in relative floats (0.0 to 1.0)
+        roi: [x1, y1, x2, y2] in relative floats (0.0 to 1.0)
     """
     h, w = img_bgr.shape[:2]
     rx, ry, rw, rh = roi
@@ -125,12 +124,6 @@ def apply_roi(img_bgr, roi):
     y2 = min(h, int((ry + rh) * h))
     return img_bgr[y1:y2, x1:x2]
 
-def is_infrared(img_bgr):
-    """Detect if image is in infrared mode (low saturation)"""
-    hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
-    mean_saturation = np.mean(hsv[:, :, 1])
-    is_ir = mean_saturation < 20
-    return is_ir, mean_saturation
 
 def remove_plate_border(img_crop):
     """Remove plate frame borders"""
@@ -139,13 +132,6 @@ def remove_plate_border(img_crop):
     margin_w = int(w * 0.08)
     return img_crop[margin_h:h-margin_h, margin_w:w-margin_w]
 
-def fix_overexposure(img_bgr):
-    """Fix overexposure using CLAHE"""
-    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-    l = clahe.apply(l)
-    return cv2.cvtColor(cv2.merge([l, a, b]), cv2.COLOR_LAB2BGR)
 
 def crop_white_area(img_bgr):
     """Crop only white area of plate (removes EU blue strip)"""
@@ -157,7 +143,6 @@ def crop_white_area(img_bgr):
 
     col_sums = np.sum(mask, axis=0)
     threshold = img_bgr.shape[0] * 0.3 * 255
-
     white_cols = np.where(col_sums > threshold)[0]
 
     if len(white_cols) > 0:
@@ -175,88 +160,143 @@ def is_overexposed(img_bgr, threshold: float = 200.0) -> bool:
     making characters invisible to OCR.
     """
     gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
-    mean_brightness = np.mean(gray)
-    return mean_brightness > threshold
+    return np.mean(gray) > threshold
+
 
 def fix_headlight_overexposure(img_bgr, debug: bool = False) -> np.ndarray:
-    """Recover license plate characters from headlight overexposure.
-
-    Pipeline:
-    1. Gamma correction (< 1.0) — pulls saturated highlights back into readable range
-    2. CLAHE on L channel — recovers local contrast after gamma
-    3. Invert if background is still predominantly light — EasyOCR reads
-       dark-on-light better than light-on-dark
-    """
-    # 1. Gamma correction — compresses highlights
-    # gamma=0.4: pixel 230 → ~162, pixel 255 → 255 (unchanged at peak)
+    """Recover plate characters from headlight overexposure via gamma + CLAHE + invert."""
+    # Gamma correction — compresses saturated highlights back into readable range
     gamma = 0.4
-    lut = np.array([
-        min(255, int((i / 255.0) ** gamma * 255))
-        for i in range(256)
-    ], dtype=np.uint8)
+    lut = np.array([min(255, int((i / 255.0) ** gamma * 255)) for i in range(256)], dtype=np.uint8)
     img_bgr = cv2.LUT(img_bgr, lut)
 
     if debug:
         mean = np.mean(cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY))
-        print(f"Headlight fix: gamma={gamma}, mean brightness after: {mean:.1f}")
+        print(f"  Headlight fix: gamma={gamma}, mean after: {mean:.1f}")
 
-    # 2. CLAHE — local contrast recovery
+    # CLAHE — local contrast recovery after gamma
     lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
     clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(4, 4))
     l = clahe.apply(l)
     img_bgr = cv2.cvtColor(cv2.merge([l, a, b]), cv2.COLOR_LAB2BGR)
 
-    # 3. Invert if background is still predominantly light
+    # Invert if background is still predominantly light
     gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
     if np.mean(gray) > 127:
         img_bgr = cv2.bitwise_not(img_bgr)
         if debug:
-            print("Headlight fix: inverted (light background detected)")
+            print("  Headlight fix: inverted (light background)")
 
     return img_bgr
 
-def enhance_plate_ai_sr(img_bgr, debug=False):
-    """AI super-resolution with overexposure correction and minimal post-processing."""
-    h, w = img_bgr.shape[:2]
+def deskew_plate(img):
+    """Correct plate skew using Hough lines. Angles <0.5° are ignored."""
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if len(img.shape) == 3 else img.copy()
+    edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+    lines = cv2.HoughLines(edges, 1, np.pi / 180, threshold=60)
 
-    # Fix headlight overexposure before SR — saturated pixels kill OCR accuracy
-    if is_overexposed(img_bgr):
-        if debug:
-            print(f"⚠️  Overexposed crop detected (mean > 200) — applying headlight fix")
-        img_bgr = fix_headlight_overexposure(img_bgr, debug=debug)
+    if lines is None:
+        return img
+
+    angles = []
+    for line in lines[:15]:
+        rho, theta = line[0]
+        angle = (theta * 180 / np.pi) - 90
+        if abs(angle) < 25:
+            angles.append(angle)
+
+    if not angles:
+        return img
+
+    median_angle = float(np.median(angles))
+    if abs(median_angle) < 0.5:
+        return img
+
+    h, w = img.shape[:2]
+    m = cv2.getRotationMatrix2D((w // 2, h // 2), median_angle, 1.0)
+    return cv2.warpAffine(img, m, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+
+
+def apply_sr_and_upscale(img_bgr, debug=False):
+    """SR 2x + upscale to minimum 400px height."""
+    h, w = img_bgr.shape[:2]
 
     sr = get_sr_model()
     if sr is not None:
         try:
             img_bgr = sr.upsample(img_bgr)
             if debug:
-                print(f"AI SR 2x: {w}x{h} → {img_bgr.shape[1]}x{img_bgr.shape[0]}")
+                print(f"  SR 2x: {w}x{h} → {img_bgr.shape[1]}x{img_bgr.shape[0]}")
         except Exception as e:
             if debug:
-                print(f"AI SR error: {e}, using bicubic")
+                print(f"  SR error: {e}, using bicubic fallback")
             img_bgr = cv2.resize(img_bgr, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
     else:
         img_bgr = cv2.resize(img_bgr, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
         if debug:
-            print(f"Bicubic 2x: {w}x{h} → {img_bgr.shape[1]}x{img_bgr.shape[0]}")
+            print(f"  Bicubic 2x: {w}x{h} → {img_bgr.shape[1]}x{img_bgr.shape[0]}")
 
-    # Upscale to 400px height if needed
     h_new, w_new = img_bgr.shape[:2]
     if h_new < 400:
         scale = 400 / h_new
         img_bgr = cv2.resize(img_bgr, None, fx=scale, fy=scale, interpolation=cv2.INTER_LANCZOS4)
         if debug:
-            print(f"LANCZOS4: {w_new}x{h_new} → {img_bgr.shape[1]}x{img_bgr.shape[0]}")
+            print(f"  LANCZOS4: {w_new}x{h_new} → {img_bgr.shape[1]}x{img_bgr.shape[0]}")
 
-    # Light sharpening
-    kernel_sharpen = np.array([
-        [-1, -1, -1],
-        [-1,  9, -1],
-        [-1, -1, -1]
-    ])
-    img_bgr = cv2.filter2D(img_bgr, -1, kernel_sharpen)
+    return img_bgr
+
+
+def preprocess_plate(img_bgr, debug=False):
+    """
+    Full preprocessing pipeline for a plate crop before OCR.
+
+    Pipeline:
+      1. crop_white_area     — remove EU blue strip
+      2. fix_headlight_overexposure — gamma + CLAHE + invert (only if overexposed)
+      3. bilateral denoise   — reduce noise while preserving character edges
+      4. CLAHE               — improve local contrast (always applied)
+      5. unsharp mask        — sharpen character edges
+      6. deskew              — correct plate skew
+      7. SR + upscale        — 2x super-resolution, minimum 400px height
+    """
+    # 1. Remove EU blue strip
+    img_bgr = crop_white_area(img_bgr)
     if debug:
-        print("Light sharpening applied")
+        print("  Preprocess: EU strip cropped")
+
+    # 2. Headlight overexposure — must come before CLAHE
+    if is_overexposed(img_bgr):
+        if debug:
+            print("  Preprocess: overexposure detected — applying headlight fix")
+        img_bgr = fix_headlight_overexposure(img_bgr, debug=debug)
+
+    # 3. Bilateral denoise
+    img_bgr = cv2.bilateralFilter(img_bgr, d=9, sigmaColor=75, sigmaSpace=75)
+    if debug:
+        print("  Preprocess: bilateral denoise applied")
+
+    # 4. CLAHE
+    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(4, 4))
+    l = clahe.apply(l)
+    img_bgr = cv2.cvtColor(cv2.merge([l, a, b]), cv2.COLOR_LAB2BGR)
+    if debug:
+        print("  Preprocess: CLAHE applied")
+
+    # 5. Unsharp mask
+    gaussian = cv2.GaussianBlur(img_bgr, (0, 0), sigmaX=1.5)
+    img_bgr = cv2.addWeighted(img_bgr, 1.8, gaussian, -0.8, 0)
+    if debug:
+        print("  Preprocess: unsharp mask applied")
+
+    # 6. Deskew
+    img_bgr = deskew_plate(img_bgr)
+    if debug:
+        print("  Preprocess: deskew applied")
+
+    # 7. SR + upscale
+    img_bgr = apply_sr_and_upscale(img_bgr, debug=debug)
 
     return img_bgr

@@ -1,11 +1,13 @@
 import os
+import threading
 import time
 import cv2
 
-from access_log import log_event
 from constants import CLEANUP_INTERVAL
-from utils import (get_options, is_complete_plate, validate_model, capture_and_recognize,
-                   fuzzy_match, save_detection_snapshot, cleanup_history)
+from utils import (get_options, is_complete_plate, validate_model,
+                   capture_frame, recognize_frame, fuzzy_match,
+                   cleanup_history)
+from access_log import log_event
 
 def main():
     opt = get_options()
@@ -64,7 +66,13 @@ def main():
     from detection import load_model
     sess, inp, out = load_model(model_path)
 
-    print("Loading EasyOCR... (first run may take 2-3 minutes)")
+    # TrOCR is the primary OCR engine — load it at startup so the first
+    # detection doesn't pay the model loading cost.
+    # EasyOCR is kept as fallback in case TrOCR fails to load.
+    from trocr import load_trocr
+    load_trocr()
+
+    print("Loading EasyOCR (fallback)...")
     import easyocr
     reader = easyocr.Reader(['en'], gpu)
 
@@ -173,21 +181,39 @@ def main():
             best_is_complete = False
             best_is_exact = False
             early_exit = False
+            prefetched = [None]
+
+            def _fetch(dest):
+                try:
+                    dest[0] = capture_frame(camera_entity, snapshot_path)
+                except Exception as e:
+                    print(f"  ⚠️  Capture error: {e}")
+                    dest[0] = None
+
+            fetch_thread = threading.Thread(target=_fetch, args=(prefetched,), daemon=True)
+            fetch_thread.start()
 
             for i in range(3):
-                plate, yolo_score, ocr_conf = capture_and_recognize(
-                    camera_entity, snapshot_path, sess, inp, out,
-                    reader, roi, conf, debug,
+                fetch_thread.join()
+                img = prefetched[0]
+
+                if i < 2:
+                    prefetched = [None]
+                    fetch_thread = threading.Thread(target=_fetch, args=(prefetched,), daemon=True)
+                    fetch_thread.start()
+
+                plate, yolo_score, ocr_conf, det_snapshot = recognize_frame(
+                    img, sess, inp, out, reader, roi, conf, debug,
+                    logs_dir=logs_dir,
+                    label=f"detection_attempt{i+1}",
                     debug_crop_path=debug_crop_path,
                     attempt_number=i+1
                 )
 
                 if plate:
                     vehicle_detected = True
-                    last_vehicle_snapshot = save_detection_snapshot(
-                        snapshot_path, logs_dir,
-                        label=f"detection_attempt{i+1}"
-                    )
+                    if det_snapshot:
+                        last_vehicle_snapshot = det_snapshot
                     print(f"  Attempt {i+1}/3: '{plate}' (YOLO: {yolo_score:.3f}, OCR: {ocr_conf:.3f})")
                     is_complete = is_complete_plate(plate)
                     is_exact = plate in allowed_plates
@@ -212,9 +238,6 @@ def main():
                 else:
                     print(f"  Attempt {i+1}/3: No plate detected")
 
-                if i < 2:
-                    sleep_time = 0.1 if best_plate else 0.5
-                    time.sleep(sleep_time)
 
             if not best_plate:
                 print("❌ No plates detected in any attempt")

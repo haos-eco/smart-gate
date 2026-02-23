@@ -2,7 +2,7 @@
 
 # Smart Gate - License Plate Recognition
 
-Automatic gate AI powered opener using YOLO + EasyOCR for license plate recognition.
+Automatic gate AI powered opener using YOLO + + TrOCR (EasyOCR as fallback) for license plate recognition.
 
 **Author**: [haz3](https://github.com/andreaemmanuele)
 
@@ -14,7 +14,7 @@ Automatic gate AI powered opener using YOLO + EasyOCR for license plate recognit
 
 ## Features
 - 🚗 Automatic license plate detection using YOLOv11
-- 🔍 OCR with EasyOCR for Italian plates (AA123AA format)
+- 🔍 OCR with TrOCR or EasyOCR for Italian plates (AA123AA format)
 - 🤖 AI Super-Resolution (EDSR 2x) for enhanced accuracy on low-res crops
 - 🌙 Automatic IR detection and exposure correction for night shots
 - 🎯 Multi-attempt recognition — exact match takes priority, then best result selected by combined YOLO + OCR score

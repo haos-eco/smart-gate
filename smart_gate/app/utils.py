@@ -48,40 +48,38 @@ def validate_model(model_path: str) -> bool:
     print(f"✅ Model found: {model_path} ({file_size:.1f}MB)")
     return True
 
-def capture_and_recognize(camera_entity, snapshot_path, sess, inp, out, reader, roi, conf, debug, debug_crop_path=None, attempt_number=None):
+def capture_frame(camera_entity, snapshot_path):
     from homeassistant import camera_snapshot
-    from image_processing import apply_roi, is_infrared, remove_plate_border, fix_overexposure
+    ensure_dir(snapshot_path)
+    camera_snapshot(camera_entity, snapshot_path)
+    return cv2.imread(snapshot_path)
+
+def recognize_frame(img, sess, inp, out, reader, roi, conf, debug,
+                    logs_dir=None, label="detection",
+                    debug_crop_path=None, attempt_number=None):
+    from image_processing import apply_roi, remove_plate_border, preprocess_plate
     from detection import detect_plates
     from ocr import ocr_plate
 
-    ensure_dir(snapshot_path)
-    camera_snapshot(camera_entity, snapshot_path)
-
-    img = cv2.imread(snapshot_path)
     if img is None:
-        return None, 0.0, 0.0
+        return None, 0.0, 0.0, None
 
     img_roi = apply_roi(img, roi)
     boxes = detect_plates(sess, inp, out, img_roi, conf=conf, debug=debug)
 
     if not boxes:
-        return None, 0.0, 0.0
+        return None, 0.0, 0.0, None
 
     boxes.sort(key=lambda b: b[4], reverse=True)
     x1, y1, x2, y2, score = boxes[0]
     plate_crop = img_roi[max(0, y1):max(0, y2), max(0, x1):max(0, x2)]
 
     if plate_crop.size == 0:
-        return None, 0.0, 0.0
+        return None, 0.0, 0.0, None
 
-    # Preprocessing
+    # Preprocessing: denoise → CLAHE → sharpen → deskew → SR → binarize
     plate_crop = remove_plate_border(plate_crop)
-
-    ir_detected, saturation = is_infrared(plate_crop)
-    if ir_detected:
-        plate_crop = fix_overexposure(plate_crop)
-        if debug:
-            print(f"  IR mode (sat={saturation:.1f}), applied exposure fix")
+    plate_crop = preprocess_plate(plate_crop, debug=debug)
 
     if debug and debug_crop_path:
         try:
@@ -97,10 +95,19 @@ def capture_and_recognize(camera_entity, snapshot_path, sess, inp, out, reader, 
             if debug:
                 print(f"  ⚠️  Failed to save debug crop: {e}")
 
-    # OCR with AI super-resolution
-    plate, ocr_conf = ocr_plate(reader, plate_crop, debug=debug)
+    det_snapshot_path = None
+    if logs_dir:
+        try:
+            os.makedirs(logs_dir, exist_ok=True)
+            ts = time.strftime("%Y%m%d_%H%M%S")
+            dest = os.path.join(logs_dir, f"{label}_{ts}.jpg")
+            cv2.imwrite(dest, img)
+            det_snapshot_path = dest
+        except Exception as e:
+            print(f"⚠️  Could not save detection snapshot: {e}")
 
-    return plate, score, ocr_conf
+    plate, ocr_conf = ocr_plate(reader, plate_crop, debug=debug)
+    return plate, score, ocr_conf, det_snapshot_path
 
 def levenshtein(a: str, b: str) -> int:
     """Calculate edit distance between two strings"""
@@ -145,17 +152,3 @@ def cleanup_history(history_dir, logs_dir, keep_days=30):
                 removed += 1
     if removed:
         print(f"🧹 Cleanup: rimossi {removed} file più vecchi di {keep_days} giorni")
-
-
-def save_detection_snapshot(snapshot_path, logs_dir, label="detection"):
-    try:
-        os.makedirs(logs_dir, exist_ok=True)
-        ts = time.strftime("%Y%m%d_%H%M%S")
-        dest = os.path.join(logs_dir, f"{label}_{ts}.jpg")
-        img = cv2.imread(snapshot_path)
-        if img is not None:
-            cv2.imwrite(dest, img)
-            return dest
-    except Exception as e:
-        print(f"⚠️  Could not save detection snapshot: {e}")
-    return snapshot_path

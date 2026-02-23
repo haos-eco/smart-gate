@@ -1,4 +1,6 @@
 onnxruntime==1.16.3
+transformers
+torch
 opencv-contrib-python==4.13.0.92
 pillow==12.1.1
 requests~=2.32.5
