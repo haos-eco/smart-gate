@@ -7,13 +7,16 @@ All notable changes to this project will be documented in this file.
 ### 🐛 Bug Fixes
 
 - Dashboard view
+- Logs snapshot, bump version to 1.2.4
 
 ### 🚜 Refactor
 
 - Dashboard view
+- Dashboard ui
 
 ### 📚 Documentation
 
+- Update changelog [skip ci]
 - Update changelog [skip ci]
 
 ## [1.2.3] - 2026-02-21
