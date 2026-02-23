@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### ⚙️ Miscellaneous Tasks
+
+- Bump to major version 2.0.0
+
+## [1.2.5] - 2026-02-23
+
+### 📚 Documentation
+
+- Update changelog [skip ci]
+
 ## [1.2.4] - 2026-02-23
 
 ### 🚀 Features
