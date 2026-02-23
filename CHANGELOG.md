@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [1.2.4] - 2026-02-23
+
+### 🚀 Features
+
+- Early exit when the plate is an exact match, write log using a different thread
 
 ### 🐛 Bug Fixes
 
@@ -18,6 +22,11 @@ All notable changes to this project will be documented in this file.
 
 - Update changelog [skip ci]
 - Update changelog [skip ci]
+- Update changelog [skip ci]
+
+### ⚙️ Miscellaneous Tasks
+
+- Bump version to 1.2.5
 
 ## [1.2.3] - 2026-02-21
 
