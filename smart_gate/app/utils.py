@@ -1,4 +1,5 @@
 import os
+import time
 import json
 import cv2
 import re as _re
@@ -130,3 +131,31 @@ def fuzzy_match(plate: str, allowed, max_distance: int = 2):
     if best_plate and best_dist <= max_distance:
         return best_plate, best_dist
     return None, -1
+
+def cleanup_history(history_dir, logs_dir, keep_days=30):
+    removed = 0
+    for folder in [history_dir, logs_dir]:
+        if not os.path.exists(folder):
+            continue
+        cutoff = time.time() - (keep_days * 86400)
+        for fname in os.listdir(folder):
+            fpath = os.path.join(folder, fname)
+            if os.path.isfile(fpath) and os.path.getmtime(fpath) < cutoff:
+                os.remove(fpath)
+                removed += 1
+    if removed:
+        print(f"🧹 Cleanup: rimossi {removed} file più vecchi di {keep_days} giorni")
+
+
+def save_detection_snapshot(snapshot_path, logs_dir, label="detection"):
+    try:
+        os.makedirs(logs_dir, exist_ok=True)
+        ts = time.strftime("%Y%m%d_%H%M%S")
+        dest = os.path.join(logs_dir, f"{label}_{ts}.jpg")
+        img = cv2.imread(snapshot_path)
+        if img is not None:
+            cv2.imwrite(dest, img)
+            return dest
+    except Exception as e:
+        print(f"⚠️  Could not save detection snapshot: {e}")
+    return snapshot_path

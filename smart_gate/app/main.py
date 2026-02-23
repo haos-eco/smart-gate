@@ -2,9 +2,10 @@ import os
 import time
 import cv2
 
-from utils import get_options, is_complete_plate, validate_model, capture_and_recognize, fuzzy_match
 from access_log import log_event
-
+from constants import CLEANUP_INTERVAL
+from utils import (get_options, is_complete_plate, validate_model, capture_and_recognize,
+                   fuzzy_match, save_detection_snapshot, cleanup_history)
 
 def main():
     opt = get_options()
@@ -23,11 +24,13 @@ def main():
     model_path = opt.get("model_path", "/config/www/smart_gate/models/yolo/model.onnx")
     snapshot_path = opt.get("snapshot_path", "/config/www/smart_gate/snapshot/latest.jpg")
     history_dir = opt.get("history_dir", "/config/www/smart_gate/snapshot/history")
+    logs_dir = opt.get("logs_dir", "/config/www/smart_gate/snapshot/logs")
     notify_services = opt.get("notify_services", [])
     visitor_stop_sec = int(opt.get("visitor_stop_sec", 5))
     notification_sound = opt.get("notification_sound", "default")
     debug_crop_path = opt.get("debug_path", "/config/www/smart_gate/snapshot/debug/last_plate_crop.jpg")
     keep_history = bool(opt.get("keep_history", False))
+    keep_history_days = int(opt.get("keep_history_days", 30))
     gpu = bool(opt.get("gpu", False))
     debug = bool(opt.get("debug", False))
 
@@ -55,6 +58,8 @@ def main():
     if not validate_model(model_path):
         return
 
+    os.makedirs(logs_dir, exist_ok=True)
+
     print("Loading YOLO model...")
     from detection import load_model
     sess, inp, out = load_model(model_path)
@@ -73,6 +78,7 @@ def main():
         print("ℹ️  AI Super-Resolution: DISABLED (using bicubic fallback)")
 
     last_open = 0.0
+    last_cleanup = 0.0
     last_motion = ""
     motion_off_since = None       # timestamp when motion went OFF
     visitor_notified = False      # avoid sending multiple notifications per stop event
@@ -84,6 +90,8 @@ def main():
     if debug:
         print(f"DEBUG - YOLO conf threshold: {conf}, min_yolo_score: {min_yolo_score}, min_ocr_confidence: {min_ocr_confidence}")
         print(f"DEBUG - ROI: {roi}, Allowed plates: {allowed_plates}")
+        print(f"DEBUG - History retention: {keep_history_days} days")
+        print(f"DEBUG - Logs dir: {logs_dir}, History dir: {history_dir}")
         if _notify_services:
             print(f"DEBUG - Visitor notification: {_notify_services}, stop threshold: {visitor_stop_sec}s")
         else:
@@ -95,6 +103,10 @@ def main():
         try:
             from homeassistant import get_state, switch_on
             from notifications import send_visitor_notification
+
+            if time.time() - last_cleanup > CLEANUP_INTERVAL:
+                cleanup_history(history_dir, logs_dir, keep_history_days)
+                last_cleanup = time.time()
 
             state = get_state(motion_entity)
 
@@ -171,7 +183,10 @@ def main():
 
                 if plate:
                     vehicle_detected = True
-                    last_vehicle_snapshot = snapshot_path  # freeze snapshot taken during recognition
+                    last_vehicle_snapshot = save_detection_snapshot(
+                        snapshot_path, logs_dir,
+                        label=f"detection_attempt{i+1}"
+                    )
                     print(f"  Attempt {i+1}/3: '{plate}' (YOLO: {yolo_score:.3f}, OCR: {ocr_conf:.3f})")
                     is_complete = is_complete_plate(plate)
                     is_exact = plate in allowed_plates
