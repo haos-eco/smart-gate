@@ -4,15 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart Gate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #111318;
-            --surface: #1c1f26;
-            --border: #2a2d36;
-            --text: #e4e6f0;
-            --text-dim: #7b7f93;
-            --green: #2ecc71;
-            --radius: 12px;
+            --bg: #080a0d;
+            --surface: #0e1117;
+            --surface2: #141820;
+            --border: #1e2330;
+            --border2: #252c3d;
+            --text: #c9cfe0;
+            --text-dim: #4a5168;
+            --text-mid: #7a839e;
+            --amber: #f0a500;
+            --amber-dim: rgba(240,165,0,.12);
+            --amber-glow: rgba(240,165,0,.25);
+            --red: #e05252;
+            --green: #38c172;
+            --mono: 'Share Tech Mono', monospace;
+            --sans: 'DM Sans', sans-serif;
+            --radius: 10px;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -20,128 +31,629 @@
         body {
             background: var(--bg);
             color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-family: var(--sans);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 24px;
-            gap: 20px;
+            gap: 0;
         }
 
-        h1 {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-dim);
-            letter-spacing: .05em;
-            text-transform: uppercase;
+        /* Subtle grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                    linear-gradient(rgba(240,165,0,.025) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(240,165,0,.025) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
         }
 
-        .camera-wrapper {
+        .shell {
             width: 100%;
-            max-width: 860px;
+            max-width: 800px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* ── Header ── */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-mark {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--amber-dim);
+            border: 1px solid rgba(240,165,0,.3);
+            display: grid;
+            place-items: center;
+            font-size: 16px;
+        }
+
+        .header-title {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--amber);
+            letter-spacing: .06em;
+        }
+
+        .header-sub {
+            font-size: 11px;
+            color: var(--text-dim);
+            letter-spacing: .04em;
+            margin-top: 2px;
+            font-family: var(--mono);
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-mid);
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+
+        .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .4; }
+        }
+
+        /* ── Camera ── */
+        .camera-card {
+            background: var(--surface);
+            border: 1px solid var(--border2);
             border-radius: var(--radius);
             overflow: hidden;
-            border: 1px solid var(--border);
-            background: #000;
-            aspect-ratio: 16/9;
             position: relative;
         }
 
-        .camera-wrapper img {
+        .camera-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .camera-id {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-mid);
+            letter-spacing: .05em;
+        }
+
+        .rec-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--red);
+            letter-spacing: .08em;
+        }
+
+        .rec-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--red);
+            animation: pulse 1.2s ease-in-out infinite;
+        }
+
+        .camera-viewport {
+            aspect-ratio: 16/9;
+            background: #000;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .camera-viewport img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
+            opacity: 0;
+            transition: opacity .3s;
         }
 
-        .camera-label {
+        .camera-viewport img.loaded {
+            opacity: 1;
+        }
+
+        /* Scanlines overlay */
+        .camera-viewport::after {
+            content: '';
             position: absolute;
-            top: 12px;
-            left: 14px;
-            background: rgba(0,0,0,.55);
-            color: #fff;
-            font-size: 12px;
-            padding: 3px 10px;
-            border-radius: 20px;
+            inset: 0;
+            background: repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0,0,0,.15) 2px,
+                    rgba(0,0,0,.15) 4px
+            );
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* Offline state */
+        .camera-offline {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            z-index: 1;
+        }
+
+        .camera-offline .offline-icon {
+            font-size: 32px;
+            opacity: .3;
+        }
+
+        .camera-offline span {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-dim);
+            letter-spacing: .08em;
+        }
+
+        .timestamp {
+            position: absolute;
+            bottom: 12px;
+            right: 14px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: rgba(255,255,255,.5);
+            z-index: 3;
+            background: rgba(0,0,0,.4);
+            padding: 2px 8px;
+            border-radius: 4px;
             backdrop-filter: blur(4px);
         }
 
-        .btn {
-            width: 100%;
-            max-width: 860px;
-            padding: 18px;
+        /* Amber corner brackets */
+        .corner { position: absolute; width: 20px; height: 20px; z-index: 4; }
+        .corner-tl { top: 8px; left: 8px; border-top: 1.5px solid var(--amber); border-left: 1.5px solid var(--amber); }
+        .corner-tr { top: 8px; right: 8px; border-top: 1.5px solid var(--amber); border-right: 1.5px solid var(--amber); }
+        .corner-bl { bottom: 8px; left: 8px; border-bottom: 1.5px solid var(--amber); border-left: 1.5px solid var(--amber); }
+        .corner-br { bottom: 8px; right: 8px; border-bottom: 1.5px solid var(--amber); border-right: 1.5px solid var(--amber); }
+
+        /* ── Controls row ── */
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: start;
+        }
+
+        /* ── Gate button ── */
+        .btn-gate {
+            padding: 16px 24px;
             border-radius: var(--radius);
-            border: none;
-            background: var(--green);
-            color: #fff;
-            font-size: 17px;
-            font-weight: 700;
+            border: 1px solid rgba(240,165,0,.4);
+            background: var(--amber-dim);
+            color: var(--amber);
+            font-family: var(--mono);
+            font-size: 13px;
+            letter-spacing: .1em;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-            transition: opacity .15s, transform .1s;
+            transition: background .2s, border-color .2s, box-shadow .2s, transform .1s;
             -webkit-tap-highlight-color: transparent;
+            text-transform: uppercase;
+            width: 100%;
         }
 
-        .btn:active { opacity: .85; transform: scale(.98); }
-        .btn:disabled { background: var(--border); color: var(--text-dim); cursor: default; transform: none; }
+        .btn-gate:hover:not(:disabled) {
+            background: rgba(240,165,0,.2);
+            border-color: rgba(240,165,0,.7);
+            box-shadow: 0 0 20px var(--amber-glow);
+        }
 
-        .feedback {
-            font-size: 14px;
+        .btn-gate:active:not(:disabled) { transform: scale(.98); }
+
+        .btn-gate:disabled {
+            border-color: var(--border);
+            background: transparent;
             color: var(--text-dim);
-            min-height: 20px;
+            cursor: default;
+        }
+
+        /* ── Info panel ── */
+        .info-panel {
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 180px;
+        }
+
+        .info-row {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .info-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: .1em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        .info-value {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--text-mid);
+        }
+
+        .info-value.active { color: var(--green); }
+
+        .info-divider {
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ── Feedback ── */
+        .feedback-bar {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px 16px;
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--text-dim);
+            letter-spacing: .04em;
+            min-height: 46px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: border-color .3s;
+        }
+
+        .feedback-bar.ok { border-color: rgba(56,193,114,.4); color: var(--green); }
+        .feedback-bar.err { border-color: rgba(224,82,82,.4); color: var(--red); }
+
+        .fb-prefix {
+            font-size: 10px;
+            letter-spacing: .12em;
+            opacity: .6;
+            white-space: nowrap;
+        }
+
+        /* ── Token screen ── */
+        #token-screen {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 99;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 32px;
+        }
+
+        #token-screen::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                    linear-gradient(rgba(240,165,0,.02) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(240,165,0,.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+
+        .token-card {
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: 16px;
+            padding: 36px 40px;
+            width: 100%;
+            max-width: 420px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .token-icon {
+            font-size: 28px;
             text-align: center;
         }
-        .feedback.ok { color: var(--green); }
-        .feedback.err { color: #e74c3c; }
+
+        .token-title {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--amber);
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .token-desc {
+            font-size: 12px;
+            color: var(--text-dim);
+            text-align: center;
+            line-height: 1.7;
+        }
+
+        .token-input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border2);
+            background: var(--surface2);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 12px;
+            outline: none;
+            transition: border-color .2s;
+        }
+
+        .token-input:focus { border-color: rgba(240,165,0,.5); }
+
+        .token-btn {
+            padding: 13px 24px;
+            background: var(--amber-dim);
+            border: 1px solid rgba(240,165,0,.4);
+            border-radius: 8px;
+            color: var(--amber);
+            font-family: var(--mono);
+            font-size: 12px;
+            letter-spacing: .1em;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: background .2s, box-shadow .2s;
+        }
+
+        .token-btn:hover {
+            background: rgba(240,165,0,.2);
+            box-shadow: 0 0 16px var(--amber-glow);
+        }
+
+        @media (max-width: 520px) {
+            .controls { grid-template-columns: 1fr; }
+            .info-panel { flex-direction: row; flex-wrap: wrap; }
+            .info-divider { display: none; }
+            .token-card { padding: 28px 24px; }
+        }
     </style>
 </head>
 <body>
 
-<h1>🚗 Smart Gate — Ingresso</h1>
+<div class="shell">
 
-<div class="camera-wrapper" id="camera-wrapper">
-    <img id="camera-feed" src="" alt="Camera ingresso" />
-    <span class="camera-label">● LIVE</span>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo-mark">🚗</div>
+            <div>
+                <div class="header-title">SMART GATE</div>
+                <div class="header-sub">ACCESS CONTROL SYSTEM</div>
+            </div>
+        </div>
+        <div class="status-pill">
+            <div class="dot"></div>
+            <span id="sys-status">ONLINE</span>
+        </div>
+    </div>
+
+    <!-- Camera card -->
+    <div class="camera-card">
+        <div class="camera-header">
+            <span class="camera-id">CAM_01 — INGRESSO PRINCIPALE</span>
+            <div class="rec-badge">
+                <div class="rec-dot"></div>
+                REC
+            </div>
+        </div>
+        <div class="camera-viewport" id="camera-viewport">
+            <!-- Offline placeholder -->
+            <div class="camera-offline" id="camera-offline">
+                <div class="offline-icon">📷</div>
+                <span>ACQUIRING SIGNAL...</span>
+            </div>
+            <img id="camera-feed" src="" alt="Camera ingresso" />
+            <!-- Corner brackets -->
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+            <!-- Timestamp -->
+            <div class="timestamp" id="cam-timestamp">--:--:--</div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <button class="btn-gate" id="open-btn" onclick="openGate()">
+            <span id="btn-icon">🔓</span>
+            <span id="btn-text">APRI CANCELLO</span>
+        </button>
+
+        <div class="info-panel">
+            <div class="info-row">
+                <div class="info-label">Telecamera</div>
+                <div class="info-value" id="cam-status-val">—</div>
+            </div>
+            <div class="info-divider"></div>
+            <div class="info-row">
+                <div class="info-label">Ultima apertura</div>
+                <div class="info-value" id="last-open">—</div>
+            </div>
+            <div class="info-divider"></div>
+            <div class="info-row">
+                <div class="info-label">Frame rate</div>
+                <div class="info-value" id="fps-val">—</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback bar -->
+    <div class="feedback-bar" id="feedback">
+        <span class="fb-prefix">SYS &gt;</span>
+        <span id="feedback-text">In attesa di comandi...</span>
+    </div>
+
 </div>
 
-<button class="btn" id="open-btn" onclick="openGate()">
-    🔓 Apri Cancello
-</button>
-
-<div class="feedback" id="feedback"></div>
+<!-- Token screen -->
+<div id="token-screen">
+    <div class="token-card">
+        <div class="token-icon">🔑</div>
+        <div class="token-title">Autenticazione Richiesta</div>
+        <p class="token-desc">
+            Inserisci il Long-Lived Access Token.<br>
+            Generalo in HA → Profilo → Long-Lived Access Tokens.<br>
+            Verrà salvato nel browser.
+        </p>
+        <input id="token-input" class="token-input" type="password" placeholder="eyJ..." />
+        <button class="token-btn" onclick="saveToken()">Salva e continua</button>
+    </div>
+</div>
 
 <script>
     // --- CONFIG ---
-    const CAMERA_ENTITY  = "camera.ingresso_high_quality";
-    const SWITCH_ENTITY  = "switch.cancello";
-    const HASS_URL       = window.location.origin; // same origin as HA
-    // Long-lived access token — generate one in your HA profile
-    const TOKEN          = localStorage.getItem("ha_token") || "";
+    const CAMERA_ENTITY = "camera.ingresso_high_quality";
+    const SWITCH_ENTITY = "switch.cancello";
+    const HASS_URL = window.location.origin;
+    const TOKEN = localStorage.getItem("ha_token") || "";
+
+    // --- Token gate ---
+    if (!TOKEN) {
+        document.getElementById("token-screen").style.display = "flex";
+    }
+
+    function saveToken() {
+        const t = document.getElementById("token-input").value.trim();
+        if (!t) return;
+        localStorage.setItem("ha_token", t);
+        location.reload();
+    }
+
+    document.getElementById("token-input")?.addEventListener("keydown", e => {
+        if (e.key === "Enter") saveToken();
+    });
+
+    // --- Timestamp ---
+    function updateTimestamp() {
+        const now = new Date();
+        document.getElementById("cam-timestamp").textContent =
+            now.toLocaleTimeString("it-IT", { hour12: false });
+    }
+    setInterval(updateTimestamp, 1000);
+    updateTimestamp();
+
+    // --- FPS counter ---
+    let lastFrameTime = null;
+    let frameCount = 0;
+    let fps = 0;
+
+    function updateFps() {
+        document.getElementById("fps-val").textContent = fps > 0 ? `${fps} fps` : "—";
+    }
+    setInterval(updateFps, 1000);
 
     // --- Camera snapshot polling ---
-    // img src can't send Authorization headers, so we fetch snapshots
-    // via the API and update the img src with a blob URL every second
     const feed = document.getElementById("camera-feed");
+    const offlineEl = document.getElementById("camera-offline");
+    const camStatusEl = document.getElementById("cam-status-val");
     let snapshotUrl = null;
+    let cameraOk = false;
+    let consecutiveFails = 0;
 
     async function refreshSnapshot() {
         if (!TOKEN) return;
+        const t0 = performance.now();
         try {
             const res = await fetch(`${HASS_URL}/api/camera_proxy/${CAMERA_ENTITY}`, {
                 headers: { "Authorization": `Bearer ${TOKEN}` }
             });
-            if (!res.ok) return;
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const blob = await res.blob();
             const newUrl = URL.createObjectURL(blob);
             feed.src = newUrl;
+            feed.classList.add("loaded");
             if (snapshotUrl) URL.revokeObjectURL(snapshotUrl);
             snapshotUrl = newUrl;
-        } catch(e) {}
+
+            // FPS
+            if (lastFrameTime) {
+                const delta = (t0 - lastFrameTime) / 1000;
+                fps = Math.round(1 / delta);
+            }
+            lastFrameTime = t0;
+            frameCount++;
+
+            if (!cameraOk) {
+                cameraOk = true;
+                consecutiveFails = 0;
+                offlineEl.style.display = "none";
+                camStatusEl.textContent = "ONLINE";
+                camStatusEl.className = "info-value active";
+            }
+        } catch(e) {
+            consecutiveFails++;
+            if (consecutiveFails >= 3) {
+                cameraOk = false;
+                offlineEl.style.display = "flex";
+                offlineEl.querySelector("span").textContent = "NO SIGNAL";
+                camStatusEl.textContent = "OFFLINE";
+                camStatusEl.className = "info-value";
+                fps = 0;
+                lastFrameTime = null;
+            }
+        }
     }
 
     refreshSnapshot();
@@ -150,12 +662,16 @@
     // --- Open gate ---
     async function openGate() {
         const btn = document.getElementById("open-btn");
-        const feedback = document.getElementById("feedback");
+        const btnText = document.getElementById("btn-text");
+        const btnIcon = document.getElementById("btn-icon");
+        const feedbackEl = document.getElementById("feedback");
+        const feedbackText = document.getElementById("feedback-text");
 
         btn.disabled = true;
-        btn.textContent = "⏳ Apertura in corso...";
-        feedback.textContent = "";
-        feedback.className = "feedback";
+        btnIcon.textContent = "⏳";
+        btnText.textContent = "APERTURA IN CORSO...";
+        feedbackEl.className = "feedback-bar";
+        feedbackText.textContent = "Invio comando a switch.cancello...";
 
         try {
             const res = await fetch(`${HASS_URL}/api/services/switch/turn_on`, {
@@ -169,49 +685,32 @@
 
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-            feedback.textContent = "✅ Cancello aperto";
-            feedback.className = "feedback ok";
-            btn.textContent = "✅ Aperto";
+            feedbackEl.className = "feedback-bar ok";
+            feedbackText.textContent = "Cancello aperto — comando eseguito";
+            btnIcon.textContent = "✅";
+            btnText.textContent = "CANCELLO APERTO";
 
-            // Re-enable after 5s (typical gate open duration)
+            const now = new Date().toLocaleTimeString("it-IT", { hour12: false });
+            document.getElementById("last-open").textContent = now;
+            document.getElementById("last-open").className = "info-value active";
+
             setTimeout(() => {
                 btn.disabled = false;
-                btn.innerHTML = "🔓 Apri Cancello";
-                feedback.textContent = "";
-                feedback.className = "feedback";
-            }, 2000);
+                btnIcon.textContent = "🔓";
+                btnText.textContent = "APRI CANCELLO";
+                feedbackEl.className = "feedback-bar";
+                feedbackText.textContent = "In attesa di comandi...";
+                document.getElementById("last-open").className = "info-value";
+            }, 3000);
 
         } catch(e) {
-            feedback.textContent = `⚠️ Errore: ${e.message}`;
-            feedback.className = "feedback err";
+            feedbackEl.className = "feedback-bar err";
+            feedbackText.textContent = `Errore: ${e.message}`;
             btn.disabled = false;
-            btn.innerHTML = "🔓 Apri Cancello";
+            btnIcon.textContent = "🔓";
+            btnText.textContent = "APRI CANCELLO";
         }
     }
-
-    // --- Token setup ---
-    if (!TOKEN) {
-        document.getElementById("token-screen").style.display = "flex";
-        document.getElementById("camera-wrapper").style.display = "none";
-        document.getElementById("open-btn").style.display = "none";
-    }
-
-    function saveToken() {
-        const t = document.getElementById("token-input").value.trim();
-        if (!t) return;
-        localStorage.setItem("ha_token", t);
-        location.reload();
-    }
-
-    document.getElementById("token-input")?.addEventListener("keydown", e => {
-        if (e.key === "Enter") saveToken();
-    });
 </script>
-<div id="token-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:99;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;">
-    <h2 style="font-size:16px;color:var(--text-dim)">🔑 Inserisci il Long-Lived Access Token</h2>
-    <p style="font-size:13px;color:var(--text-dim);text-align:center;max-width:400px;">Generalo in HA → Profilo → Long-Lived Access Tokens.<br>Verrà salvato nel browser.</p>
-    <input id="token-input" type="password" placeholder="eyJ..." style="width:100%;max-width:400px;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;outline:none;" />
-    <button onclick="saveToken()" style="padding:12px 32px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;">Salva e continua</button>
-</div>
 </body>
 </html>

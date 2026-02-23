@@ -7,103 +7,526 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart Gate — Accessi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #111318;
-            --surface: #1c1f26;
-            --border: #2a2d36;
-            --text: #e4e6f0;
-            --text-dim: #7b7f93;
-            --green: #2ecc71;
-            --red: #e74c3c;
-            --yellow: #f39c12;
-            --blue: #3498db;
+            --bg: #080a0d;
+            --surface: #0e1117;
+            --surface2: #141820;
+            --border: #1e2330;
+            --border2: #252c3d;
+            --text: #c9cfe0;
+            --text-dim: #4a5168;
+            --text-mid: #7a839e;
+            --amber: #f0a500;
+            --amber-dim: rgba(240,165,0,.10);
+            --amber-glow: rgba(240,165,0,.22);
+            --green: #38c172;
+            --green-dim: rgba(56,193,114,.12);
+            --red: #e05252;
+            --red-dim: rgba(224,82,82,.12);
+            --yellow: #d4a017;
+            --yellow-dim: rgba(212,160,23,.12);
+            --blue: #4a90d9;
+            --blue-dim: rgba(74,144,217,.12);
+            --mono: 'Share Tech Mono', monospace;
+            --sans: 'DM Sans', sans-serif;
             --radius: 10px;
         }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; padding: 16px; }
 
-        h1 { font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-        h1 span { font-size: 22px; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
+            font-size: 14px;
+            padding: 24px;
+            min-height: 100vh;
+        }
 
-        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-        .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
-        .stat-value { font-size: 26px; font-weight: 700; line-height: 1; }
-        .stat-label { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
-        .stat-value.green { color: var(--green); }
-        .stat-value.red { color: var(--red); }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                    linear-gradient(rgba(240,165,0,.025) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(240,165,0,.025) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .shell {
+            max-width: 1100px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* ── Header ── */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-mark {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--amber-dim);
+            border: 1px solid rgba(240,165,0,.28);
+            display: grid;
+            place-items: center;
+            font-size: 16px;
+        }
+
+        .header-title {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--amber);
+            letter-spacing: .06em;
+        }
+
+        .header-sub {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-dim);
+            letter-spacing: .04em;
+            margin-top: 2px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-mid);
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+
+        .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+        .refresh-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            letter-spacing: .05em;
+        }
+
+        /* ── Stats ── */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .stat {
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius);
+            padding: 16px 18px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+        }
+        .stat.green::before { background: var(--green); }
+        .stat.red::before   { background: var(--red); }
+        .stat.yellow::before { background: var(--yellow); }
+        .stat.blue::before  { background: var(--blue); }
+
+        .stat-value {
+            font-family: var(--mono);
+            font-size: 30px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .stat-value.green  { color: var(--green); }
+        .stat-value.red    { color: var(--red); }
         .stat-value.yellow { color: var(--yellow); }
-        .stat-value.blue { color: var(--blue); }
+        .stat-value.blue   { color: var(--blue); }
 
-        .filters { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
-        .filter-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; transition: all .15s; }
-        .filter-btn:hover { border-color: var(--blue); color: var(--text); }
-        .filter-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+        .stat-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .1em;
+            color: var(--text-dim);
+            margin-top: 6px;
+            text-transform: uppercase;
+        }
 
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 10px 12px; font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
-        td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        /* ── Filters ── */
+        .filters {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filters-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .1em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin-right: 4px;
+        }
+
+        .filter-btn {
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            color: var(--text-mid);
+            padding: 6px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .06em;
+            transition: all .15s;
+        }
+
+        .filter-btn:hover { border-color: var(--amber); color: var(--amber); }
+        .filter-btn.active { background: var(--amber-dim); border-color: rgba(240,165,0,.5); color: var(--amber); }
+
+        /* ── Table card ── */
+        .table-card {
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .table-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .table-title {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-mid);
+            letter-spacing: .07em;
+            text-transform: uppercase;
+        }
+
+        .entry-count {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            letter-spacing: .06em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 10px 14px;
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: .09em;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 11px 14px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
         tr:last-child td { border-bottom: none; }
-        tr:hover td { background: var(--surface); }
 
-        .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-        .badge.opened { background: rgba(46,204,113,.15); color: var(--green); }
-        .badge.rejected { background: rgba(231,76,60,.15); color: var(--red); }
-        .badge.unknown { background: rgba(243,156,18,.15); color: var(--yellow); }
+        tr:hover td { background: rgba(240,165,0,.025); }
 
-        .match-type { font-size: 11px; color: var(--text-dim); background: var(--border); padding: 2px 7px; border-radius: 4px; }
+        /* ── Badges ── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .04em;
+            white-space: nowrap;
+        }
 
-        .plate { font-family: "SF Mono", "Fira Code", monospace; font-weight: 700; font-size: 15px; letter-spacing: .05em; }
+        .badge.opened   { background: var(--green-dim);  color: var(--green);  border: 1px solid rgba(56,193,114,.25); }
+        .badge.rejected { background: var(--red-dim);    color: var(--red);    border: 1px solid rgba(224,82,82,.25); }
+        .badge.unknown  { background: var(--yellow-dim); color: var(--yellow); border: 1px solid rgba(212,160,23,.25); }
 
-        .thumb { width: 80px; height: 45px; object-fit: cover; border-radius: 5px; cursor: pointer; background: var(--border); }
-        .no-img { width: 80px; height: 45px; border-radius: 5px; background: var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-dim); font-size: 18px; }
+        .match-chip {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            padding: 2px 8px;
+            border-radius: 4px;
+            letter-spacing: .06em;
+        }
 
-        .scores { font-size: 12px; color: var(--text-dim); }
+        .plate {
+            font-family: var(--mono);
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: .08em;
+            color: var(--amber);
+        }
 
-        /* Lightbox */
-        .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 100; align-items: center; justify-content: center; }
+        .plate-alt {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+
+        .thumb {
+            width: 80px;
+            height: 45px;
+            object-fit: cover;
+            border-radius: 6px;
+            cursor: pointer;
+            background: var(--border);
+            border: 1px solid var(--border2);
+            transition: border-color .15s, box-shadow .15s;
+        }
+
+        .thumb:hover {
+            border-color: rgba(240,165,0,.5);
+            box-shadow: 0 0 10px var(--amber-glow);
+        }
+
+        .no-img {
+            width: 80px;
+            height: 45px;
+            border-radius: 6px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-dim);
+            font-size: 18px;
+        }
+
+        .scores {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-mid);
+        }
+
+        .score-bar {
+            height: 3px;
+            background: var(--border);
+            border-radius: 2px;
+            margin-top: 5px;
+            overflow: hidden;
+            width: 60px;
+        }
+
+        .score-fill {
+            height: 100%;
+            background: var(--amber);
+            border-radius: 2px;
+            transition: width .3s;
+        }
+
+        .reason-text {
+            font-size: 12px;
+            color: var(--text-mid);
+            max-width: 160px;
+            line-height: 1.4;
+        }
+
+        .timestamp-cell {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-dim);
+            line-height: 1.6;
+            white-space: nowrap;
+        }
+
+        .ts-date { color: var(--text-mid); }
+        .ts-time { color: var(--text-dim); }
+
+        /* ── Empty ── */
+        .empty {
+            text-align: center;
+            padding: 60px 24px;
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--text-dim);
+            letter-spacing: .06em;
+        }
+
+        /* ── Lightbox ── */
+        .lightbox {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.88);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+        }
+
         .lightbox.open { display: flex; }
-        .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: var(--radius); }
-        .lightbox-close { position: absolute; top: 20px; right: 24px; font-size: 28px; cursor: pointer; color: #fff; }
 
-        .empty { text-align: center; padding: 48px; color: var(--text-dim); }
-        .timestamp { font-size: 12px; color: var(--text-dim); }
-        .reason { font-size: 12px; color: var(--text-dim); max-width: 180px; }
+        .lightbox img {
+            max-width: 90vw;
+            max-height: 88vh;
+            border-radius: var(--radius);
+            border: 1px solid var(--border2);
+            box-shadow: 0 0 60px rgba(0,0,0,.8);
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 24px;
+            font-size: 22px;
+            cursor: pointer;
+            color: var(--text-dim);
+            font-family: var(--mono);
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            transition: color .15s, border-color .15s;
+        }
+
+        .lightbox-close:hover { color: var(--amber); border-color: rgba(240,165,0,.4); }
+
+        @media (max-width: 700px) {
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            body { padding: 16px; }
+            th:nth-child(4), td:nth-child(4),
+            th:nth-child(5), td:nth-child(5) { display: none; }
+        }
     </style>
 </head>
 <body>
 
-<h1><span>🚗</span> Smart Gate — Storico Accessi</h1>
+<div class="shell">
 
-<div class="stats" id="stats"></div>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo-mark">🚗</div>
+            <div>
+                <div class="header-title">SMART GATE</div>
+                <div class="header-sub">ACCESS LOG — STORICO ACCESSI</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <span class="refresh-label" id="last-refresh">—</span>
+            <div class="status-pill">
+                <div class="dot"></div>
+                <span>LIVE</span>
+            </div>
+        </div>
+    </div>
 
-<div class="filters">
-    <button class="filter-btn active" onclick="setFilter('all')">Tutti</button>
-    <button class="filter-btn" onclick="setFilter('opened')">✅ Aperti</button>
-    <button class="filter-btn" onclick="setFilter('rejected')">⛔ Rifiutati</button>
-    <button class="filter-btn" onclick="setFilter('unknown')">❓ Sconosciuti</button>
+    <!-- Stats -->
+    <div class="stats" id="stats">
+        <div class="stat green"><div class="stat-value green">—</div><div class="stat-label">Aperture</div></div>
+        <div class="stat red"><div class="stat-value red">—</div><div class="stat-label">Rifiutati</div></div>
+        <div class="stat yellow"><div class="stat-value yellow">—</div><div class="stat-label">Sconosciuti</div></div>
+        <div class="stat blue"><div class="stat-value blue">—</div><div class="stat-label">Targhe uniche</div></div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+        <span class="filters-label">Filtro &gt;</span>
+        <button class="filter-btn active" onclick="setFilter('all', this)">TUTTI</button>
+        <button class="filter-btn" onclick="setFilter('opened', this)">APERTI</button>
+        <button class="filter-btn" onclick="setFilter('rejected', this)">RIFIUTATI</button>
+        <button class="filter-btn" onclick="setFilter('unknown', this)">SCONOSCIUTI</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+        <div class="table-card-header">
+            <span class="table-title">LOG EVENTI</span>
+            <span class="entry-count" id="entry-count">0 RECORD</span>
+        </div>
+        <table>
+            <thead>
+            <tr>
+                <th>Foto</th>
+                <th>Targa</th>
+                <th>Stato</th>
+                <th>Match</th>
+                <th>YOLO / OCR</th>
+                <th>Motivo</th>
+                <th>Data / Ora</th>
+            </tr>
+            </thead>
+            <tbody id="log-body"></tbody>
+        </table>
+        <div class="empty" id="empty" style="display:none">[ NESSUN ACCESSO REGISTRATO ]</div>
+    </div>
+
 </div>
 
-<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
-    <table>
-        <thead>
-        <tr>
-            <th>Foto</th>
-            <th>Targa</th>
-            <th>Stato</th>
-            <th>Tipo match</th>
-            <th>YOLO / OCR</th>
-            <th>Motivo</th>
-            <th>Data/Ora</th>
-        </tr>
-        </thead>
-        <tbody id="log-body"></tbody>
-    </table>
-    <div class="empty" id="empty" style="display:none">Nessun accesso registrato</div>
-</div>
-
+<!-- Lightbox -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-    <span class="lightbox-close">✕</span>
+    <div class="lightbox-close">✕</div>
     <img id="lightbox-img" src="" alt="" />
 </div>
 
@@ -121,76 +544,97 @@
             allEntries = text.trim() ? JSON.parse(text) : [];
             renderStats();
             renderTable();
+            const now = new Date();
+            document.getElementById('last-refresh').textContent =
+                'SYNC ' + now.toLocaleTimeString('it-IT', { hour12: false });
         } catch(e) {
             if (allEntries.length === 0) {
-                document.getElementById('empty').textContent = 'Nessun accesso registrato';
                 document.getElementById('empty').style.display = 'block';
             }
         }
     }
 
     function renderStats() {
-        const opened  = allEntries.filter(e => e.status === 'opened').length;
+        const opened   = allEntries.filter(e => e.status === 'opened').length;
         const rejected = allEntries.filter(e => e.status === 'rejected').length;
         const unknown  = allEntries.filter(e => e.status === 'unknown').length;
         const plates   = new Set(allEntries.map(e => e.plate)).size;
 
         document.getElementById('stats').innerHTML = `
-    <div class="stat"><div class="stat-value green">${opened}</div><div class="stat-label">Aperture</div></div>
-    <div class="stat"><div class="stat-value red">${rejected}</div><div class="stat-label">Rifiutati</div></div>
-    <div class="stat"><div class="stat-value yellow">${unknown}</div><div class="stat-label">Sconosciuti</div></div>
-    <div class="stat"><div class="stat-value blue">${plates}</div><div class="stat-label">Targhe uniche</div></div>
-  `;
+            <div class="stat green"><div class="stat-value green">${opened}</div><div class="stat-label">Aperture</div></div>
+            <div class="stat red"><div class="stat-value red">${rejected}</div><div class="stat-label">Rifiutati</div></div>
+            <div class="stat yellow"><div class="stat-value yellow">${unknown}</div><div class="stat-label">Sconosciuti</div></div>
+            <div class="stat blue"><div class="stat-value blue">${plates}</div><div class="stat-label">Targhe uniche</div></div>
+        `;
     }
 
     function renderTable() {
-        const entries = currentFilter === 'all' ? allEntries : allEntries.filter(e => e.status === currentFilter);
-        const body = document.getElementById('log-body');
+        const entries = currentFilter === 'all'
+            ? allEntries
+            : allEntries.filter(e => e.status === currentFilter);
+
+        const body  = document.getElementById('log-body');
         const empty = document.getElementById('empty');
+
+        document.getElementById('entry-count').textContent = entries.length + ' RECORD';
 
         if (entries.length === 0) {
             body.innerHTML = '';
             empty.style.display = 'block';
-            empty.textContent = 'Nessun risultato';
+            empty.textContent = '[ NESSUN RISULTATO ]';
             return;
         }
         empty.style.display = 'none';
 
-        body.innerHTML = entries.map(e => `
-    <tr>
-      <td>
-        ${e.snapshot_url
-            ? `<img class="thumb" src="${e.snapshot_url}" alt="" onclick="openLightbox('${e.snapshot_url}')" />`
-            : `<div class="no-img">📷</div>`}
-      </td>
-      <td>
-        <span class="plate">${e.plate || '—'}</span>
-        ${e.matched_plate && e.matched_plate !== e.plate ? `<br><span style="font-size:11px;color:var(--text-dim)">→ ${e.matched_plate}</span>` : ''}
-      </td>
-      <td><span class="badge ${e.status}">${statusLabel(e.status)}</span></td>
-      <td><span class="match-type">${matchLabel(e.match_type)}</span></td>
-      <td class="scores">${e.yolo_score.toFixed(2)} / ${e.ocr_conf.toFixed(2)}</td>
-      <td class="reason">${e.reason || '—'}</td>
-      <td class="timestamp">${formatDate(e.timestamp)}</td>
-    </tr>
-  `).join('');
+        body.innerHTML = entries.map(e => {
+            const yoloW  = Math.round((e.yolo_score || 0) * 100);
+            const ocrW   = Math.round((e.ocr_conf   || 0) * 100);
+            const d      = new Date(e.timestamp);
+            const dateStr = d.toLocaleDateString('it-IT');
+            const timeStr = d.toLocaleTimeString('it-IT');
+
+            return `
+            <tr>
+                <td>
+                    ${e.snapshot_url
+                ? `<img class="thumb" src="${e.snapshot_url}" alt="" onclick="openLightbox('${e.snapshot_url}')" />`
+                : `<div class="no-img">📷</div>`
+            }
+                </td>
+                <td>
+                    <div class="plate">${e.plate || '—'}</div>
+                    ${e.matched_plate && e.matched_plate !== e.plate
+                ? `<div class="plate-alt">→ ${e.matched_plate}</div>`
+                : ''
+            }
+                </td>
+                <td><span class="badge ${e.status}">${statusLabel(e.status)}</span></td>
+                <td><span class="match-chip">${matchLabel(e.match_type)}</span></td>
+                <td>
+                    <div class="scores">${(e.yolo_score||0).toFixed(2)} / ${(e.ocr_conf||0).toFixed(2)}</div>
+                    <div class="score-bar"><div class="score-fill" style="width:${yoloW}%"></div></div>
+                </td>
+                <td><div class="reason-text">${e.reason || '—'}</div></td>
+                <td class="timestamp-cell">
+                    <div class="ts-date">${dateStr}</div>
+                    <div class="ts-time">${timeStr}</div>
+                </td>
+            </tr>`;
+        }).join('');
     }
 
     function statusLabel(s) {
-        return { opened: '✅ Aperto', rejected: '⛔ Rifiutato', unknown: '❓ Sconosciuto' }[s] || s;
-    }
-    function matchLabel(m) {
-        return { exact: 'Esatto', fuzzy: 'Fuzzy', none: 'Nessuno' }[m] || m;
-    }
-    function formatDate(ts) {
-        const d = new Date(ts);
-        return d.toLocaleDateString('it-IT') + '<br>' + d.toLocaleTimeString('it-IT');
+        return { opened: '✅ APERTO', rejected: '⛔ RIFIUTATO', unknown: '❓ SCONOSCIUTO' }[s] || s;
     }
 
-    function setFilter(f) {
+    function matchLabel(m) {
+        return { exact: 'ESATTO', fuzzy: 'FUZZY', none: 'NESSUNO' }[m] || (m || '—');
+    }
+
+    function setFilter(f, btn) {
         currentFilter = f;
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        event.target.classList.add('active');
+        btn.classList.add('active');
         renderTable();
     }
 
@@ -198,14 +642,19 @@
         document.getElementById('lightbox-img').src = url;
         document.getElementById('lightbox').classList.add('open');
     }
+
     function closeLightbox() {
         document.getElementById('lightbox').classList.remove('open');
     }
 
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') closeLightbox();
+    });
+
     renderStats();
     renderTable();
     load();
-    setInterval(load, 30000); // auto-refresh ogni 30s
+    setInterval(load, 30000);
 </script>
 </body>
 </html>
