@@ -288,7 +288,6 @@ def main():
                 switch_on(gate_switch)
                 last_open = now
                 print(f"✅ Exact match '{best_plate}' → gate opening")
-                import threading
                 threading.Thread(
                     target=log_event,
                     args=(best_plate, "opened", last_vehicle_snapshot or snapshot_path, "exact match",
