@@ -4,12 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🚀 Features
+
+- Privacy zones, visitor notifications, annotated snapshots (v2.1.0)
+- Privacy zones, visitor notifications, annotated snapshots (v2.1.0)
+
 ### 🐛 Bug Fixes
 
 - Removed duplicated import from main.py
 
 ### 📚 Documentation
 
+- Update changelog [skip ci]
 - Update changelog [skip ci]
 - Update changelog [skip ci]
 
