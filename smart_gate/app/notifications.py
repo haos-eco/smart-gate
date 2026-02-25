@@ -8,7 +8,6 @@ from homeassistant import call_service
 def send_visitor_notification(
     notify_devices: list,
     snapshot_path: str,
-    camera_entity: str,
     notification_sound: str,
     title: str = "🚗 Smart Gate",
     message: str = "C'è qualcuno all'ingresso",
@@ -18,7 +17,6 @@ def send_visitor_notification(
 
     notify_devices:    list of service strings e.g. ["notify.mobile_app_iphone_di_andrea"]
     snapshot_path:     absolute path on HA filesystem e.g. /config/www/smart_gate/snapshot/latest.jpg
-    camera_entity:     camera entity id (reserved for future use / logging)
     title / message:   override defaults for failure/rejection notifications
     The image is served via /local/... mapped from /config/www/...
     """

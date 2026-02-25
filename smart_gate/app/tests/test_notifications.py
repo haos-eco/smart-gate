@@ -13,7 +13,6 @@ if os.path.exists("smart_gate"):
 else:
     SNAPSHOT_PATH = "tests/fixtures/roi/latest.jpg"
 
-CAMERA_ENTITY = "camera.ingresso_high_quality"
 NOTIFICATION_SOUND = "default"
 
 
@@ -42,7 +41,7 @@ def test_notification_sent_to_all_devices(snapshot):
     ]
 
     with patch("notifications.call_service") as mock_call:
-        send_visitor_notification(devices, snapshot, CAMERA_ENTITY, NOTIFICATION_SOUND)
+        send_visitor_notification(devices, snapshot, NOTIFICATION_SOUND)
 
     assert mock_call.call_count == len(devices)
     called_services = [c.args[0] for c in mock_call.call_args_list]
@@ -55,7 +54,6 @@ def test_notification_payload_structure(snapshot):
         send_visitor_notification(
             ["notify.mobile_app_iphone_di_andrea"],
             snapshot,
-            CAMERA_ENTITY,
             NOTIFICATION_SOUND,
         )
 
@@ -78,7 +76,6 @@ def test_notification_custom_title_and_message(snapshot):
         send_visitor_notification(
             ["notify.mobile_app_iphone_di_andrea"],
             snapshot,
-            CAMERA_ENTITY,
             NOTIFICATION_SOUND,
             title=custom_title,
             message=custom_message,
@@ -95,7 +92,6 @@ def test_notification_image_url_mapping(snapshot):
         send_visitor_notification(
             ["notify.mobile_app_iphone_di_andrea"],
             "/config/www/smart_gate/snapshot/latest.jpg",
-            CAMERA_ENTITY,
             NOTIFICATION_SOUND,
         )
 
@@ -109,7 +105,6 @@ def test_notification_action_open_gate(snapshot):
         send_visitor_notification(
             ["notify.mobile_app_iphone_di_andrea"],
             snapshot,
-            CAMERA_ENTITY,
             NOTIFICATION_SOUND,
         )
 
@@ -125,7 +120,6 @@ def test_notification_tap_url_points_to_lovelace(snapshot):
         send_visitor_notification(
             ["notify.mobile_app_iphone_di_andrea"],
             snapshot,
-            CAMERA_ENTITY,
             NOTIFICATION_SOUND,
         )
 
@@ -146,6 +140,6 @@ def test_notification_continues_on_single_device_failure(snapshot):
 
     with patch("notifications.call_service", side_effect=fail_first) as mock_call:
         # Should not raise
-        send_visitor_notification(devices, snapshot, CAMERA_ENTITY, NOTIFICATION_SOUND)
+        send_visitor_notification(devices, snapshot, NOTIFICATION_SOUND)
 
     assert mock_call.call_count == len(devices)

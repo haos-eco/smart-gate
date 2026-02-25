@@ -185,10 +185,7 @@ def main():
                 try:
                     notification_snapshot = last_vehicle_snapshot or snapshot_path
                     send_visitor_notification(
-                        _notify_services,
-                        notification_snapshot,
-                        camera_entity,
-                        notification_sound,
+                        _notify_services, notification_snapshot, notification_sound
                     )
                     visitor_notified = True
                     print("🔔 Visitor notification sent")
@@ -352,7 +349,6 @@ def main():
                         send_visitor_notification(
                             _notify_services,
                             annotated,
-                            camera_entity,
                             notification_sound,
                             title="⚠️ SmartGate: targa illeggibile",
                             message="Veicolo rilevato ma targa non riconosciuta.",
@@ -395,7 +391,6 @@ def main():
                             send_visitor_notification(
                                 _notify_services,
                                 annotated,
-                                camera_entity,
                                 notification_sound,
                                 title=f"⚠️ SmartGate: targa rifiutata ({best_plate})",
                                 message=f"Rilevamento non affidabile. {reason}.",
@@ -427,7 +422,6 @@ def main():
                             send_visitor_notification(
                                 _notify_services,
                                 annotated,
-                                camera_entity,
                                 notification_sound,
                                 title=f"⚠️ SmartGate: targa rifiutata ({best_plate})",
                                 message=f"OCR non affidabile. {reason}.",
@@ -473,7 +467,6 @@ def main():
                         send_visitor_notification(
                             _notify_services,
                             annotated,
-                            camera_entity,
                             notification_sound,
                             title=f"🚗 SmartGate: targa sconosciuta ({best_plate})",
                             message="Veicolo non in whitelist.",
@@ -584,7 +577,6 @@ def main():
                             send_visitor_notification(
                                 _notify_services,
                                 annotated,
-                                camera_entity,
                                 notification_sound,
                                 title=f"⚠️ SmartGate: accesso negato ({best_plate})",
                                 message=f"Fuzzy match con '{matched}' ma {person_entity} non è a casa.",
