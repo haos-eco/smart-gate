@@ -74,14 +74,12 @@ def ocr_plate(reader, img_bgr, debug=False):
     Returns:
         (plate_text, confidence)
     """
-    processor, model = load_trocr()
-
-    if processor is not None and model is not None:
+    if load_trocr():
         return _ocr_with_trocr(img_bgr, debug=debug)
-    else:
-        if debug:
-            print("  Using EasyOCR fallback")
-        return _ocr_with_easyocr(reader, img_bgr, debug=debug)
+
+    if debug:
+        print("  Using EasyOCR fallback")
+    return _ocr_with_easyocr(reader, img_bgr, debug=debug)
 
 
 def _ocr_with_trocr(img_bgr, debug=False):

@@ -59,7 +59,8 @@ class TestOCRPlateEasyOCR:
 
     @pytest.fixture(autouse=True)
     def disable_trocr(self):
-        with patch("ocr.load_trocr", return_value=(None, None)):
+        # load_trocr now returns bool — patch accordingly
+        with patch("ocr.load_trocr", return_value=False):
             yield
 
     def test_basic(self, sample_plate_image, mock_easyocr_reader):
@@ -128,8 +129,9 @@ class TestOCRPlateTrOCR:
     def require_trocr(self):
         from trocr import load_trocr
 
-        processor, model = load_trocr()
-        if processor is None or model is None:
+        # load_trocr now returns bool, not (processor, model)
+        available = load_trocr()
+        if not available:
             pytest.skip("TrOCR model not available")
 
     def test_returns_string_and_confidence(self, sample_plate_image):

@@ -26,6 +26,14 @@ def snapshot():
     return SNAPSHOT_PATH
 
 
+def _captured_payload(mock_call, call_index=0):
+    """
+    Extract the payload dict from a mocked call_service invocation.
+    call_service(service, payload) → args = (service, payload)
+    """
+    return mock_call.call_args_list[call_index].args[1]
+
+
 def test_notification_sent_to_all_devices(snapshot):
     """send_visitor_notification calls call_service once per device."""
     devices = [
@@ -42,7 +50,7 @@ def test_notification_sent_to_all_devices(snapshot):
 
 
 def test_notification_payload_structure(snapshot):
-    """Payload contains required fields: title, message, image, actions, url."""
+    """Payload contains required fields with correct default title and message."""
     with patch("notifications.call_service") as mock_call:
         send_visitor_notification(
             ["notify.mobile_app_iphone_di_andrea"],
@@ -51,7 +59,7 @@ def test_notification_payload_structure(snapshot):
             NOTIFICATION_SOUND,
         )
 
-    payload = mock_call.call_args.args[1]
+    payload = _captured_payload(mock_call)
     data = payload["data"]
 
     assert payload["title"] == "🚗 Smart Gate"
@@ -59,6 +67,26 @@ def test_notification_payload_structure(snapshot):
     assert "image" in data
     assert "actions" in data
     assert "url" in data
+
+
+def test_notification_custom_title_and_message(snapshot):
+    """Custom title and message override defaults (used for failure notifications)."""
+    custom_title = "⚠️ SmartGate: targa sconosciuta (AB123CD)"
+    custom_message = "Veicolo non in whitelist."
+
+    with patch("notifications.call_service") as mock_call:
+        send_visitor_notification(
+            ["notify.mobile_app_iphone_di_andrea"],
+            snapshot,
+            CAMERA_ENTITY,
+            NOTIFICATION_SOUND,
+            title=custom_title,
+            message=custom_message,
+        )
+
+    payload = _captured_payload(mock_call)
+    assert payload["title"] == custom_title
+    assert payload["message"] == custom_message
 
 
 def test_notification_image_url_mapping(snapshot):
@@ -71,7 +99,7 @@ def test_notification_image_url_mapping(snapshot):
             NOTIFICATION_SOUND,
         )
 
-    payload = mock_call.call_args.args[1]
+    payload = _captured_payload(mock_call)
     assert payload["data"]["image"] == "/local/smart_gate/snapshot/latest.jpg"
 
 
@@ -85,7 +113,7 @@ def test_notification_action_open_gate(snapshot):
             NOTIFICATION_SOUND,
         )
 
-    actions = mock_call.call_args.args[1]["data"]["actions"]
+    actions = _captured_payload(mock_call)["data"]["actions"]
     assert len(actions) == 1
     assert actions[0]["action"] == "SMART_GATE_OPEN"
     assert actions[0]["destructive"] is False
@@ -101,7 +129,7 @@ def test_notification_tap_url_points_to_lovelace(snapshot):
             NOTIFICATION_SOUND,
         )
 
-    url = mock_call.call_args.args[1]["data"]["url"]
+    url = _captured_payload(mock_call)["data"]["url"]
     assert url == "/lovelace/smart-gate"
 
 
