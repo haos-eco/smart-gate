@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from notifications import send_visitor_notification
 
@@ -16,12 +16,13 @@ NOTIFY_DEVICES = [
 CAMERA_ENTITY = "camera.ingresso_high_quality"
 NOTIFICATION_SOUND = "default"
 
-if os.path.exists('smart_gate'):
+if os.path.exists("smart_gate"):
     SNAPSHOT_PATH = "smart_gate/app/tests/fixtures/roi/latest.jpg"
 else:
     SNAPSHOT_PATH = "tests/fixtures/roi/latest.jpg"
 
 HA_SNAPSHOT_PATH = "/config/www/smart_gate/snapshot/latest.jpg"
+
 
 def test_send_real_notification():
     """
@@ -53,5 +54,7 @@ def test_send_real_notification():
         print(f"\n⚠️  Could not write to {HA_SNAPSHOT_PATH} — sending without image")
 
     print(f"📤 Sending test notification to: {NOTIFY_DEVICES}")
-    send_visitor_notification(NOTIFY_DEVICES, effective_path, CAMERA_ENTITY, NOTIFICATION_SOUND)
+    send_visitor_notification(
+        NOTIFY_DEVICES, effective_path, CAMERA_ENTITY, NOTIFICATION_SOUND
+    )
     print("✅ Notification sent — check your phone")

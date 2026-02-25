@@ -14,11 +14,14 @@ Automatic gate AI powered opener using YOLO + TrOCR (EasyOCR as fallback) for li
 
 ## Features
 - 🚗 Automatic license plate detection using YOLOv11
-- 🔍 OCR with TrOCR or EasyOCR for Italian plates (AA123AA format)
+- 🔍 OCR with TrOCR (primary) or EasyOCR (fallback) for Italian plates (AA123AA format)
 - 🤖 AI Super-Resolution (EDSR 2x) for enhanced accuracy on low-res crops
 - 🌙 Automatic IR detection and exposure correction for night shots
-- 🎯 Multi-attempt recognition — exact match takes priority, then best result selected by combined YOLO + OCR score
+- 🎯 Multi-attempt recognition — exact whitelist match triggers early exit, otherwise best result selected by combined YOLO + OCR score
 - 🔎 Fuzzy matching for OCR errors (up to 2 character tolerance)
 - 📍 GPS-based security — fuzzy matches require the plate owner to be in home zone
 - 🔒 Per-plate person entity — each plate linked to its specific owner
+- 🔔 Visitor notifications — actionable push notification with annotated snapshot when an unknown vehicle stops
+- 🖼️ Annotated snapshots — bounding box and OCR result drawn on every notification image
+- 🚫 Privacy zones — mask areas of the camera frame before recognition and notifications
 - 📊 Debug mode with per-attempt snapshot history

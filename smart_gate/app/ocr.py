@@ -1,31 +1,41 @@
 from trocr import load_trocr, trocr_infer
 import re
 
+
 def extract_plate_pattern(text):
     """Extract AA123AA pattern from longer strings"""
     if len(text) == 7:
         if text[0:2].isalpha() and text[2:5].isdigit() and text[5:7].isalpha():
             return text
 
-    match = re.search(r'[A-Z]{2}\d{3}[A-Z]{2}', text)
+    match = re.search(r"[A-Z]{2}\d{3}[A-Z]{2}", text)
     if match:
         return match.group()
 
     if len(text) == 8:
         candidate = text[1:]
-        if candidate[0:2].isalpha() and candidate[2:5].isdigit() and candidate[5:7].isalpha():
+        if (
+            candidate[0:2].isalpha()
+            and candidate[2:5].isdigit()
+            and candidate[5:7].isalpha()
+        ):
             return candidate
 
         candidate = text[:-1]
-        if candidate[0:2].isalpha() and candidate[2:5].isdigit() and candidate[5:7].isalpha():
+        if (
+            candidate[0:2].isalpha()
+            and candidate[2:5].isdigit()
+            and candidate[5:7].isalpha()
+        ):
             return candidate
 
     return text
 
+
 def fix_common_ocr_errors(plate_text):
     """Fix common OCR errors for Italian plate format AA123AA"""
-    letter_fixes = {'0': 'O', '1': 'I', '4': 'A', '8': 'B'}
-    number_fixes = {'O': '0', 'I': '1', 'Z': '4', 'S': '5', 'B': '8'}
+    letter_fixes = {"0": "O", "1": "I", "4": "A", "8": "B"}
+    number_fixes = {"O": "0", "I": "1", "Z": "4", "S": "5", "B": "8"}
 
     if len(plate_text) != 7:
         return plate_text
@@ -47,7 +57,8 @@ def fix_common_ocr_errors(plate_text):
         if result[i].isdigit() and result[i] in letter_fixes:
             result[i] = letter_fixes[result[i]]
 
-    return ''.join(result)
+    return "".join(result)
+
 
 def ocr_plate(reader, img_bgr, debug=False):
     """
@@ -96,10 +107,7 @@ def _ocr_with_trocr(img_bgr, debug=False):
 
 def _ocr_with_easyocr(reader, img_bgr, debug=False):
     """OCR using EasyOCR (fallback)."""
-    results = reader.readtext(
-        img_bgr,
-        allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    )
+    results = reader.readtext(img_bgr, allowlist="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
     if debug:
         print(f"  EasyOCR found {len(results)} text regions:")
@@ -109,7 +117,8 @@ def _ocr_with_easyocr(reader, img_bgr, debug=False):
 
     valid_results = [
         (re.sub(r"[^A-Z0-9]", "", text.upper()), conf)
-        for _, text, conf in results if conf > 0.5
+        for _, text, conf in results
+        if conf > 0.5
     ]
 
     if not valid_results:

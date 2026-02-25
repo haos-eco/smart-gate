@@ -1,19 +1,19 @@
 import cv2
 import numpy as np
 
+
 def load_model(model_path: str):
     """Load YOLO ONNX model"""
     import onnxruntime as ort
+
     print(f"onnxruntime version: {ort.__version__}")
 
-    sess = ort.InferenceSession(
-        model_path,
-        providers=["CPUExecutionProvider"]
-    )
+    sess = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
     inp = sess.get_inputs()[0].name
     out = sess.get_outputs()[0].name
 
     return sess, inp, out
+
 
 def detect_plates(sess, inp_name, out_name, img_bgr, conf=0.35, debug=False):
     """Detect license plates using YOLO"""
@@ -43,10 +43,10 @@ def detect_plates(sess, inp_name, out_name, img_bgr, conf=0.35, debug=False):
             continue
 
         # Convert from center format to corner format
-        x1 = int((cx - w/2) / size * w0)
-        y1 = int((cy - h/2) / size * h0)
-        x2 = int((cx + w/2) / size * w0)
-        y2 = int((cy + h/2) / size * h0)
+        x1 = int((cx - w / 2) / size * w0)
+        y1 = int((cy - h / 2) / size * h0)
+        x2 = int((cx + w / 2) / size * w0)
+        y2 = int((cy + h / 2) / size * h0)
 
         # Clamp
         x1 = max(0, min(x1, w0))

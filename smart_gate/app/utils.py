@@ -5,10 +5,12 @@ import cv2
 import re as _re
 from constants import LOG_PATH
 
+
 def get_options():
     """Load options from Home Assistant supervisor"""
     with open("/data/options.json", "r", encoding="utf-8") as f:
         return json.load(f)
+
 
 def ensure_dir(path: str):
     """Create directory if it doesn't exist"""
@@ -16,9 +18,11 @@ def ensure_dir(path: str):
     if directory:
         os.makedirs(directory, exist_ok=True)
 
+
 def is_complete_plate(p: str) -> bool:
     """Returns True if plate matches full Italian format AA123AA"""
-    return bool(_re.match(r'^[A-Z]{2}\d{3}[A-Z]{2}$', p))
+    return bool(_re.match(r"^[A-Z]{2}\d{3}[A-Z]{2}$", p))
+
 
 def load_logs() -> list:
     if not os.path.exists(LOG_PATH):
@@ -29,10 +33,12 @@ def load_logs() -> list:
     except Exception:
         return []
 
+
 def save_logs(entries: list):
     os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
     with open(LOG_PATH, "w") as f:
         json.dump(entries, f, indent=2)
+
 
 def validate_model(model_path: str) -> bool:
     if not os.path.exists(model_path):
@@ -48,34 +54,57 @@ def validate_model(model_path: str) -> bool:
     print(f"✅ Model found: {model_path} ({file_size:.1f}MB)")
     return True
 
+
 def capture_frame(camera_entity, snapshot_path):
     from homeassistant import camera_snapshot
+
     ensure_dir(snapshot_path)
     camera_snapshot(camera_entity, snapshot_path)
     return cv2.imread(snapshot_path)
 
-def recognize_frame(img, sess, inp, out, reader, roi, conf, debug,
-                    logs_dir=None, label="detection",
-                    debug_crop_path=None, attempt_number=None):
+
+def recognize_frame(
+    img,
+    sess,
+    inp,
+    out,
+    reader,
+    roi,
+    conf,
+    debug,
+    logs_dir=None,
+    label="detection",
+    debug_crop_path=None,
+    attempt_number=None,
+    ocr_engine="trocr",
+    trocr_infer_fn=None,
+):
+    """
+    Detect and recognize a license plate in `img`.
+
+    OCR routing:
+      - ocr_engine="trocr"   → calls trocr_infer_fn(crop, debug)
+      - ocr_engine="easyocr" → calls ocr_plate(reader, crop, debug) via ocr.py
+    """
     from image_processing import apply_roi, remove_plate_border, preprocess_plate
     from detection import detect_plates
-    from ocr import ocr_plate
 
     if img is None:
-        return None, 0.0, 0.0, None
+        return None, 0.0, 0.0, None, None
 
     img_roi = apply_roi(img, roi)
     boxes = detect_plates(sess, inp, out, img_roi, conf=conf, debug=debug)
 
     if not boxes:
-        return None, 0.0, 0.0, None
+        return None, 0.0, 0.0, None, None
 
     boxes.sort(key=lambda b: b[4], reverse=True)
     x1, y1, x2, y2, score = boxes[0]
-    plate_crop = img_roi[max(0, y1):max(0, y2), max(0, x1):max(0, x2)]
+    bbox = (int(x1), int(y1), int(x2), int(y2))
+    plate_crop = img_roi[max(0, y1) : max(0, y2), max(0, x1) : max(0, x2)]
 
     if plate_crop.size == 0:
-        return None, 0.0, 0.0, None
+        return None, 0.0, 0.0, None, None
 
     # Preprocessing: denoise → CLAHE → sharpen → deskew → SR → binarize
     plate_crop = remove_plate_border(plate_crop)
@@ -106,8 +135,15 @@ def recognize_frame(img, sess, inp, out, reader, roi, conf, debug,
         except Exception as e:
             print(f"⚠️  Could not save detection snapshot: {e}")
 
-    plate, ocr_conf = ocr_plate(reader, plate_crop, debug=debug)
-    return plate, score, ocr_conf, det_snapshot_path
+    if ocr_engine == "trocr" and trocr_infer_fn is not None:
+        plate, ocr_conf = trocr_infer_fn(plate_crop, debug)
+    else:
+        from ocr import ocr_plate
+
+        plate, ocr_conf = ocr_plate(reader, plate_crop, debug=debug)
+
+    return plate, score, ocr_conf, det_snapshot_path, bbox
+
 
 def levenshtein(a: str, b: str) -> int:
     """Calculate edit distance between two strings"""
@@ -122,6 +158,7 @@ def levenshtein(a: str, b: str) -> int:
             curr.append(min(prev[j + 1] + 1, curr[j] + 1, prev[j] + (ca != cb)))
         prev = curr
     return prev[-1]
+
 
 def fuzzy_match(plate: str, allowed, max_distance: int = 2):
     """
@@ -138,6 +175,7 @@ def fuzzy_match(plate: str, allowed, max_distance: int = 2):
     if best_plate and best_dist <= max_distance:
         return best_plate, best_dist
     return None, -1
+
 
 def cleanup_history(history_dir, logs_dir, keep_days=30):
     removed = 0

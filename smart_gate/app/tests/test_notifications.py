@@ -4,17 +4,18 @@ import pytest
 
 from unittest.mock import patch, call
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from notifications import send_visitor_notification
 
-if os.path.exists('smart_gate'):
+if os.path.exists("smart_gate"):
     SNAPSHOT_PATH = "smart_gate/app/tests/fixtures/roi/latest.jpg"
 else:
     SNAPSHOT_PATH = "tests/fixtures/roi/latest.jpg"
 
 CAMERA_ENTITY = "camera.ingresso_high_quality"
 NOTIFICATION_SOUND = "default"
+
 
 @pytest.fixture
 def snapshot():
@@ -23,6 +24,7 @@ def snapshot():
         "Run test_roi_snapshot.py first to generate it."
     )
     return SNAPSHOT_PATH
+
 
 def test_notification_sent_to_all_devices(snapshot):
     """send_visitor_notification calls call_service once per device."""
@@ -37,6 +39,7 @@ def test_notification_sent_to_all_devices(snapshot):
     assert mock_call.call_count == len(devices)
     called_services = [c.args[0] for c in mock_call.call_args_list]
     assert called_services == devices
+
 
 def test_notification_payload_structure(snapshot):
     """Payload contains required fields: title, message, image, actions, url."""
@@ -57,6 +60,7 @@ def test_notification_payload_structure(snapshot):
     assert "actions" in data
     assert "url" in data
 
+
 def test_notification_image_url_mapping(snapshot):
     """/config/www/ path is correctly mapped to /local/ for HA serving."""
     with patch("notifications.call_service") as mock_call:
@@ -69,6 +73,7 @@ def test_notification_image_url_mapping(snapshot):
 
     payload = mock_call.call_args.args[1]
     assert payload["data"]["image"] == "/local/smart_gate/snapshot/latest.jpg"
+
 
 def test_notification_action_open_gate(snapshot):
     """Payload includes SMART_GATE_OPEN action with correct label."""
@@ -85,6 +90,7 @@ def test_notification_action_open_gate(snapshot):
     assert actions[0]["action"] == "SMART_GATE_OPEN"
     assert actions[0]["destructive"] is False
 
+
 def test_notification_tap_url_points_to_lovelace(snapshot):
     """Tap URL must point to the smart-gate lovelace view."""
     with patch("notifications.call_service") as mock_call:
@@ -97,6 +103,7 @@ def test_notification_tap_url_points_to_lovelace(snapshot):
 
     url = mock_call.call_args.args[1]["data"]["url"]
     assert url == "/lovelace/smart-gate"
+
 
 def test_notification_continues_on_single_device_failure(snapshot):
     """If one device fails, notification is still sent to remaining devices."""

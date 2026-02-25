@@ -21,6 +21,8 @@
             --amber-glow: rgba(240,165,0,.25);
             --red: #e05252;
             --green: #38c172;
+            --orange: #ff6b35;
+            --cyan: #00e5ff;
             --mono: 'Share Tech Mono', monospace;
             --sans: 'DM Sans', sans-serif;
             --radius: 10px;
@@ -36,12 +38,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             padding: 24px;
             gap: 0;
         }
 
-        /* Subtle grid background */
         body::before {
             content: '';
             position: fixed;
@@ -74,398 +74,333 @@
             border: 1px solid var(--border2);
             border-radius: var(--radius);
         }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
+        .header-left { display: flex; align-items: center; gap: 12px; }
         .logo-mark {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
+            width: 36px; height: 36px; border-radius: 8px;
             background: var(--amber-dim);
             border: 1px solid rgba(240,165,0,.3);
-            display: grid;
-            place-items: center;
-            font-size: 16px;
+            display: grid; place-items: center; font-size: 16px;
         }
-
-        .header-title {
-            font-family: var(--mono);
-            font-size: 13px;
-            color: var(--amber);
-            letter-spacing: .06em;
-        }
-
-        .header-sub {
-            font-size: 11px;
-            color: var(--text-dim);
-            letter-spacing: .04em;
-            margin-top: 2px;
-            font-family: var(--mono);
-        }
-
+        .header-title { font-family: var(--mono); font-size: 13px; color: var(--amber); letter-spacing: .06em; }
+        .header-sub { font-size: 11px; color: var(--text-dim); letter-spacing: .04em; margin-top: 2px; font-family: var(--mono); }
         .status-pill {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            font-family: var(--mono);
-            font-size: 11px;
-            color: var(--text-mid);
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            padding: 5px 12px;
-            border-radius: 20px;
+            display: flex; align-items: center; gap: 7px;
+            font-family: var(--mono); font-size: 11px; color: var(--text-mid);
+            background: var(--surface2); border: 1px solid var(--border);
+            padding: 5px 12px; border-radius: 20px;
         }
-
         .dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--green);
-            box-shadow: 0 0 6px var(--green);
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--green); box-shadow: 0 0 6px var(--green);
             animation: pulse 2s ease-in-out infinite;
         }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: .4; }
+        /* ── Tab nav ── */
+        .tab-nav {
+            display: flex;
+            gap: 4px;
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius);
+            padding: 6px;
         }
+        .tab-btn {
+            flex: 1;
+            padding: 9px 12px;
+            border-radius: 7px;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .07em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background .15s, color .15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+        }
+        .tab-btn:hover { color: var(--text-mid); background: var(--surface2); }
+        .tab-btn.active { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(240,165,0,.25); }
 
-        /* ── Camera ── */
+        /* ── Tab panels ── */
+        .tab-panel { display: none; flex-direction: column; gap: 16px; }
+        .tab-panel.active { display: flex; }
+
+        /* ══════════ MONITOR TAB ══════════ */
+
+        /* Camera */
         .camera-card {
             background: var(--surface);
             border: 1px solid var(--border2);
             border-radius: var(--radius);
             overflow: hidden;
-            position: relative;
         }
-
         .camera-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 16px;
-            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 16px; border-bottom: 1px solid var(--border);
         }
-
-        .camera-id {
-            font-family: var(--mono);
-            font-size: 11px;
-            color: var(--text-mid);
-            letter-spacing: .05em;
-        }
-
-        .rec-badge {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-family: var(--mono);
-            font-size: 10px;
-            color: var(--red);
-            letter-spacing: .08em;
-        }
-
-        .rec-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--red);
-            animation: pulse 1.2s ease-in-out infinite;
-        }
-
-        .camera-viewport {
-            aspect-ratio: 16/9;
-            background: #000;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .camera-viewport img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            opacity: 0;
-            transition: opacity .3s;
-        }
-
-        .camera-viewport img.loaded {
-            opacity: 1;
-        }
-
-        /* Scanlines overlay */
+        .camera-id { font-family: var(--mono); font-size: 11px; color: var(--text-mid); letter-spacing: .05em; }
+        .rec-badge { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10px; color: var(--red); letter-spacing: .08em; }
+        .rec-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); animation: pulse 1.2s ease-in-out infinite; }
+        .camera-viewport { aspect-ratio: 16/9; background: #000; position: relative; overflow: hidden; }
+        .camera-viewport img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity .3s; }
+        .camera-viewport img.loaded { opacity: 1; }
         .camera-viewport::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: repeating-linear-gradient(
-                    0deg,
-                    transparent,
-                    transparent 2px,
-                    rgba(0,0,0,.15) 2px,
-                    rgba(0,0,0,.15) 4px
-            );
-            pointer-events: none;
-            z-index: 2;
+            content: ''; position: absolute; inset: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.15) 2px, rgba(0,0,0,.15) 4px);
+            pointer-events: none; z-index: 2;
         }
-
-        /* Offline state */
         .camera-offline {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            z-index: 1;
+            position: absolute; inset: 0; display: flex;
+            flex-direction: column; align-items: center; justify-content: center;
+            gap: 10px; z-index: 1;
         }
-
-        .camera-offline .offline-icon {
-            font-size: 32px;
-            opacity: .3;
-        }
-
-        .camera-offline span {
-            font-family: var(--mono);
-            font-size: 11px;
-            color: var(--text-dim);
-            letter-spacing: .08em;
-        }
-
+        .camera-offline .offline-icon { font-size: 32px; opacity: .3; }
+        .camera-offline span { font-family: var(--mono); font-size: 11px; color: var(--text-dim); letter-spacing: .08em; }
         .timestamp {
-            position: absolute;
-            bottom: 12px;
-            right: 14px;
-            font-family: var(--mono);
-            font-size: 11px;
-            color: rgba(255,255,255,.5);
-            z-index: 3;
-            background: rgba(0,0,0,.4);
-            padding: 2px 8px;
-            border-radius: 4px;
-            backdrop-filter: blur(4px);
+            position: absolute; bottom: 12px; right: 14px;
+            font-family: var(--mono); font-size: 11px; color: rgba(255,255,255,.5);
+            z-index: 3; background: rgba(0,0,0,.4); padding: 2px 8px; border-radius: 4px;
         }
-
-        /* Amber corner brackets */
         .corner { position: absolute; width: 20px; height: 20px; z-index: 4; }
         .corner-tl { top: 8px; left: 8px; border-top: 1.5px solid var(--amber); border-left: 1.5px solid var(--amber); }
         .corner-tr { top: 8px; right: 8px; border-top: 1.5px solid var(--amber); border-right: 1.5px solid var(--amber); }
         .corner-bl { bottom: 8px; left: 8px; border-bottom: 1.5px solid var(--amber); border-left: 1.5px solid var(--amber); }
         .corner-br { bottom: 8px; right: 8px; border-bottom: 1.5px solid var(--amber); border-right: 1.5px solid var(--amber); }
 
-        /* ── Controls row ── */
-        .controls {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 12px;
-            align-items: start;
-        }
-
-        /* ── Gate button ── */
+        .controls { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; }
         .btn-gate {
-            padding: 16px 24px;
-            border-radius: var(--radius);
-            border: 1px solid rgba(240,165,0,.4);
-            background: var(--amber-dim);
-            color: var(--amber);
-            font-family: var(--mono);
-            font-size: 13px;
-            letter-spacing: .1em;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            padding: 16px 24px; border-radius: var(--radius);
+            border: 1px solid rgba(240,165,0,.4); background: var(--amber-dim);
+            color: var(--amber); font-family: var(--mono); font-size: 13px;
+            letter-spacing: .1em; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
             transition: background .2s, border-color .2s, box-shadow .2s, transform .1s;
-            -webkit-tap-highlight-color: transparent;
-            text-transform: uppercase;
-            width: 100%;
+            text-transform: uppercase; width: 100%;
         }
-
-        .btn-gate:hover:not(:disabled) {
-            background: rgba(240,165,0,.2);
-            border-color: rgba(240,165,0,.7);
-            box-shadow: 0 0 20px var(--amber-glow);
-        }
-
+        .btn-gate:hover:not(:disabled) { background: rgba(240,165,0,.2); border-color: rgba(240,165,0,.7); box-shadow: 0 0 20px var(--amber-glow); }
         .btn-gate:active:not(:disabled) { transform: scale(.98); }
+        .btn-gate:disabled { border-color: var(--border); background: transparent; color: var(--text-dim); cursor: default; }
 
-        .btn-gate:disabled {
-            border-color: var(--border);
-            background: transparent;
-            color: var(--text-dim);
-            cursor: default;
-        }
-
-        /* ── Info panel ── */
         .info-panel {
-            background: var(--surface);
-            border: 1px solid var(--border2);
-            border-radius: var(--radius);
-            padding: 14px 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            min-width: 180px;
+            background: var(--surface); border: 1px solid var(--border2);
+            border-radius: var(--radius); padding: 14px 16px;
+            display: flex; flex-direction: column; gap: 12px; min-width: 180px;
         }
-
-        .info-row {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-
-        .info-label {
-            font-family: var(--mono);
-            font-size: 9px;
-            letter-spacing: .1em;
-            color: var(--text-dim);
-            text-transform: uppercase;
-        }
-
-        .info-value {
-            font-family: var(--mono);
-            font-size: 12px;
-            color: var(--text-mid);
-        }
-
+        .info-row { display: flex; flex-direction: column; gap: 3px; }
+        .info-label { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; color: var(--text-dim); text-transform: uppercase; }
+        .info-value { font-family: var(--mono); font-size: 12px; color: var(--text-mid); }
         .info-value.active { color: var(--green); }
+        .info-divider { height: 1px; background: var(--border); }
 
-        .info-divider {
-            height: 1px;
-            background: var(--border);
-        }
-
-        /* ── Feedback ── */
         .feedback-bar {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 12px 16px;
-            font-family: var(--mono);
-            font-size: 12px;
-            color: var(--text-dim);
-            letter-spacing: .04em;
-            min-height: 46px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: border-color .3s;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 12px 16px;
+            font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+            letter-spacing: .04em; min-height: 46px;
+            display: flex; align-items: center; gap: 10px; transition: border-color .3s;
         }
-
         .feedback-bar.ok { border-color: rgba(56,193,114,.4); color: var(--green); }
         .feedback-bar.err { border-color: rgba(224,82,82,.4); color: var(--red); }
+        .fb-prefix { font-size: 10px; letter-spacing: .12em; opacity: .6; white-space: nowrap; }
 
-        .fb-prefix {
-            font-size: 10px;
-            letter-spacing: .12em;
-            opacity: .6;
-            white-space: nowrap;
+        /* ══════════ ZONE EDITOR TAB ══════════ */
+        .ze-layout {
+            display: grid;
+            grid-template-columns: 1fr 260px;
+            gap: 12px;
+            min-height: 500px;
         }
 
-        /* ── Token screen ── */
-        #token-screen {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: var(--bg);
-            z-index: 99;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 20px;
-            padding: 32px;
-        }
+        /* Canvas area */
+        .ze-canvas-col { display: flex; flex-direction: column; gap: 8px; }
 
-        #token-screen::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                    linear-gradient(rgba(240,165,0,.02) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(240,165,0,.02) 1px, transparent 1px);
-            background-size: 40px 40px;
-            pointer-events: none;
-        }
-
-        .token-card {
+        .ze-toolbar {
             background: var(--surface);
             border: 1px solid var(--border2);
-            border-radius: 16px;
-            padding: 36px 40px;
-            width: 100%;
-            max-width: 420px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            position: relative;
-            z-index: 1;
+            border-radius: var(--radius);
+            padding: 8px 12px;
+            display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+        }
+        .ze-btn {
+            font-family: var(--mono); font-size: 10px; letter-spacing: .07em;
+            text-transform: uppercase; padding: 6px 12px;
+            border: 1px solid var(--border2); background: var(--surface2);
+            color: var(--text-mid); cursor: pointer; border-radius: 6px;
+            transition: all .15s;
+        }
+        .ze-btn:hover { border-color: var(--amber); color: var(--amber); }
+        .ze-btn.active { background: var(--amber-dim); color: var(--amber); border-color: rgba(240,165,0,.4); }
+        .ze-btn.danger:hover { border-color: var(--red); color: var(--red); }
+        .ze-divider { width: 1px; height: 18px; background: var(--border2); }
+
+        .ze-canvas-wrapper {
+            flex: 1; position: relative;
+            background: #000; border: 1px solid var(--border2);
+            border-radius: var(--radius); overflow: hidden;
+            min-height: 360px; cursor: crosshair;
+        }
+        .ze-canvas-wrapper.mode-select { cursor: default; }
+        #ze-bg-canvas, #ze-draw-canvas { position: absolute; top: 0; left: 0; }
+        .ze-no-camera {
+            position: absolute; inset: 0; display: flex;
+            flex-direction: column; align-items: center; justify-content: center;
+            gap: 10px; color: var(--text-dim); font-family: var(--mono);
+            font-size: 11px; letter-spacing: .07em; pointer-events: none;
+        }
+        .ze-no-camera svg { opacity: .15; }
+        .ze-coords {
+            font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+            padding: 4px 2px; height: 20px;
+        }
+        .ze-mode-badge {
+            position: absolute; bottom: 8px; right: 8px;
+            font-family: var(--mono); font-size: 9px; padding: 3px 8px;
+            border: 1px solid; border-radius: 4px; text-transform: uppercase;
+            letter-spacing: .1em; pointer-events: none; z-index: 10;
+        }
+        .ze-mode-badge.draw { color: var(--orange); border-color: rgba(255,107,53,.4); }
+        .ze-mode-badge.select { color: var(--cyan); border-color: rgba(0,229,255,.4); }
+
+        /* Sidebar */
+        .ze-sidebar {
+            display: flex; flex-direction: column; gap: 10px;
         }
 
-        .token-icon {
-            font-size: 28px;
-            text-align: center;
+        .ze-section {
+            background: var(--surface); border: 1px solid var(--border2);
+            border-radius: var(--radius); padding: 12px 14px;
+        }
+        .ze-section-title {
+            font-family: var(--mono); font-size: 9px; letter-spacing: .12em;
+            text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .ze-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        .ze-input {
+            width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+            color: var(--text); font-family: var(--mono); font-size: 11px;
+            padding: 7px 10px; border-radius: 6px; outline: none; transition: border-color .15s;
+        }
+        .ze-input:focus { border-color: rgba(240,165,0,.5); }
+        .ze-input::placeholder { color: var(--text-dim); }
+        .ze-field-label {
+            font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+            letter-spacing: .08em; text-transform: uppercase;
+            display: block; margin-bottom: 5px;
+        }
+        .ze-input-row { display: flex; gap: 6px; }
+        .ze-input-row .ze-input { flex: 1; }
+
+        /* Zone list */
+        .ze-zones-list { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
+        .ze-zones-list::-webkit-scrollbar { width: 3px; }
+        .ze-zones-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+        .ze-zone-item {
+            border: 1px solid var(--border2); border-radius: 6px;
+            padding: 8px 10px; background: var(--surface2);
+            cursor: pointer; transition: border-color .15s;
+        }
+        .ze-zone-item:hover { border-color: var(--border2); }
+        .ze-zone-item.selected { border-color: var(--orange); background: rgba(255,107,53,.05); }
+        .ze-zone-header { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+        .ze-zone-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .ze-zone-name {
+            flex: 1; background: transparent; border: none; color: var(--text);
+            font-family: var(--sans); font-size: 12px; font-weight: 400; outline: none;
+        }
+        .ze-zone-name:focus { color: var(--amber); }
+        .ze-zone-coords { font-family: var(--mono); font-size: 9px; color: var(--text-dim); margin-bottom: 6px; }
+        .ze-zone-actions { display: flex; gap: 5px; }
+        .ze-zone-btn {
+            font-family: var(--mono); font-size: 9px; letter-spacing: .07em;
+            text-transform: uppercase; padding: 2px 7px;
+            border: 1px solid var(--border2); background: transparent;
+            color: var(--text-dim); cursor: pointer; border-radius: 4px; transition: all .1s;
+        }
+        .ze-zone-btn:hover { border-color: var(--text-dim); color: var(--text); }
+        .ze-zone-btn.del:hover { border-color: var(--red); color: var(--red); }
+
+        .ze-empty {
+            text-align: center; padding: 20px 10px;
+            color: var(--text-dim); font-family: var(--mono); font-size: 10px;
+            letter-spacing: .07em; line-height: 1.8;
         }
 
-        .token-title {
-            font-family: var(--mono);
-            font-size: 12px;
-            color: var(--amber);
-            letter-spacing: .1em;
-            text-transform: uppercase;
-            text-align: center;
+        /* YAML output */
+        .ze-yaml-label { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
+        #ze-yaml-output {
+            font-family: var(--mono); font-size: 10px; line-height: 1.7;
+            color: var(--cyan); white-space: pre; overflow-x: auto; max-height: 140px; overflow-y: auto;
         }
+        #ze-yaml-output::-webkit-scrollbar { width: 3px; height: 3px; }
+        #ze-yaml-output::-webkit-scrollbar-thumb { background: var(--border2); }
 
-        .token-desc {
-            font-size: 12px;
-            color: var(--text-dim);
-            text-align: center;
-            line-height: 1.7;
+        .ze-count { font-family: var(--mono); font-size: 10px; color: var(--text-dim); text-align: center; }
+        .ze-count strong { color: var(--amber); }
+
+        .ze-copy-btn {
+            width: 100%; padding: 9px; border-radius: 6px;
+            border: 1px solid rgba(56,193,114,.35); background: rgba(56,193,114,.08);
+            color: var(--green); font-family: var(--mono); font-size: 11px;
+            letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+            transition: all .15s;
         }
+        .ze-copy-btn:hover { background: rgba(56,193,114,.15); border-color: var(--green); }
 
+        /* Toast */
+        #toast {
+            position: fixed; bottom: 24px; left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: var(--surface); border: 1px solid var(--border2);
+            color: var(--text); font-family: var(--mono); font-size: 11px;
+            letter-spacing: .08em; padding: 10px 20px; border-radius: 6px;
+            transition: transform .3s cubic-bezier(.34,1.56,.64,1); z-index: 9999; white-space: nowrap;
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); }
+        #toast.ok { border-color: var(--green); color: var(--green); }
+        #toast.err { border-color: var(--red); color: var(--red); }
+
+        /* Token screen */
+        #token-screen {
+            display: none; position: fixed; inset: 0; background: var(--bg);
+            z-index: 99; flex-direction: column; align-items: center;
+            justify-content: center; gap: 20px; padding: 32px;
+        }
+        .token-card {
+            background: var(--surface); border: 1px solid var(--border2);
+            border-radius: 16px; padding: 36px 40px; width: 100%; max-width: 420px;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+        .token-icon { font-size: 28px; text-align: center; }
+        .token-title { font-family: var(--mono); font-size: 12px; color: var(--amber); letter-spacing: .1em; text-transform: uppercase; text-align: center; }
+        .token-desc { font-size: 12px; color: var(--text-dim); text-align: center; line-height: 1.7; }
         .token-input {
-            width: 100%;
-            padding: 12px 16px;
-            border-radius: 8px;
-            border: 1px solid var(--border2);
-            background: var(--surface2);
-            color: var(--text);
-            font-family: var(--mono);
-            font-size: 12px;
-            outline: none;
-            transition: border-color .2s;
+            width: 100%; padding: 12px 16px; border-radius: 8px;
+            border: 1px solid var(--border2); background: var(--surface2);
+            color: var(--text); font-family: var(--mono); font-size: 12px; outline: none;
         }
-
         .token-input:focus { border-color: rgba(240,165,0,.5); }
-
         .token-btn {
-            padding: 13px 24px;
-            background: var(--amber-dim);
-            border: 1px solid rgba(240,165,0,.4);
-            border-radius: 8px;
-            color: var(--amber);
-            font-family: var(--mono);
-            font-size: 12px;
-            letter-spacing: .1em;
-            cursor: pointer;
-            text-transform: uppercase;
+            padding: 13px 24px; background: var(--amber-dim);
+            border: 1px solid rgba(240,165,0,.4); border-radius: 8px;
+            color: var(--amber); font-family: var(--mono); font-size: 12px;
+            letter-spacing: .1em; cursor: pointer; text-transform: uppercase;
             transition: background .2s, box-shadow .2s;
         }
+        .token-btn:hover { background: rgba(240,165,0,.2); box-shadow: 0 0 16px var(--amber-glow); }
 
-        .token-btn:hover {
-            background: rgba(240,165,0,.2);
-            box-shadow: 0 0 16px var(--amber-glow);
-        }
-
-        @media (max-width: 520px) {
+        @media (max-width: 580px) {
+            .ze-layout { grid-template-columns: 1fr; }
             .controls { grid-template-columns: 1fr; }
             .info-panel { flex-direction: row; flex-wrap: wrap; }
             .info-divider { display: none; }
-            .token-card { padding: 28px 24px; }
         }
     </style>
 </head>
@@ -488,64 +423,143 @@
         </div>
     </div>
 
-    <!-- Camera card -->
-    <div class="camera-card">
-        <div class="camera-header">
-            <span class="camera-id">CAM_01 — INGRESSO PRINCIPALE</span>
-            <div class="rec-badge">
-                <div class="rec-dot"></div>
-                REC
-            </div>
-        </div>
-        <div class="camera-viewport" id="camera-viewport">
-            <!-- Offline placeholder -->
-            <div class="camera-offline" id="camera-offline">
-                <div class="offline-icon">📷</div>
-                <span>ACQUIRING SIGNAL...</span>
-            </div>
-            <img id="camera-feed" src="" alt="Camera ingresso" />
-            <!-- Corner brackets -->
-            <div class="corner corner-tl"></div>
-            <div class="corner corner-tr"></div>
-            <div class="corner corner-bl"></div>
-            <div class="corner corner-br"></div>
-            <!-- Timestamp -->
-            <div class="timestamp" id="cam-timestamp">--:--:--</div>
-        </div>
-    </div>
-
-    <!-- Controls -->
-    <div class="controls">
-        <button class="btn-gate" id="open-btn" onclick="openGate()">
-            <span id="btn-icon">🔓</span>
-            <span id="btn-text">APRI CANCELLO</span>
+    <!-- Tab nav -->
+    <div class="tab-nav">
+        <button class="tab-btn active" id="tab-monitor-btn" onclick="switchTab('monitor')">
+            📷 Monitor
         </button>
+        <button class="tab-btn" id="tab-zones-btn" onclick="switchTab('zones')">
+            ◧ Zone Maschera
+        </button>
+    </div>
 
-        <div class="info-panel">
-            <div class="info-row">
-                <div class="info-label">Telecamera</div>
-                <div class="info-value" id="cam-status-val">—</div>
+    <!-- ══ MONITOR TAB ══ -->
+    <div class="tab-panel active" id="tab-monitor">
+
+        <div class="camera-card">
+            <div class="camera-header">
+                <span class="camera-id">CAM_01 — INGRESSO PRINCIPALE</span>
+                <div class="rec-badge"><div class="rec-dot"></div>REC</div>
             </div>
-            <div class="info-divider"></div>
-            <div class="info-row">
-                <div class="info-label">Ultima apertura</div>
-                <div class="info-value" id="last-open">—</div>
-            </div>
-            <div class="info-divider"></div>
-            <div class="info-row">
-                <div class="info-label">Frame rate</div>
-                <div class="info-value" id="fps-val">—</div>
+            <div class="camera-viewport" id="camera-viewport">
+                <div class="camera-offline" id="camera-offline">
+                    <div class="offline-icon">📷</div>
+                    <span>ACQUIRING SIGNAL...</span>
+                </div>
+                <img id="camera-feed" src="" alt="Camera ingresso" />
+                <div class="corner corner-tl"></div>
+                <div class="corner corner-tr"></div>
+                <div class="corner corner-bl"></div>
+                <div class="corner corner-br"></div>
+                <div class="timestamp" id="cam-timestamp">--:--:--</div>
             </div>
         </div>
-    </div>
 
-    <!-- Feedback bar -->
-    <div class="feedback-bar" id="feedback">
-        <span class="fb-prefix">SYS &gt;</span>
-        <span id="feedback-text">In attesa di comandi...</span>
-    </div>
+        <div class="controls">
+            <button class="btn-gate" id="open-btn" onclick="openGate()">
+                <span id="btn-icon">🔓</span>
+                <span id="btn-text">APRI CANCELLO</span>
+            </button>
+            <div class="info-panel">
+                <div class="info-row">
+                    <div class="info-label">Telecamera</div>
+                    <div class="info-value" id="cam-status-val">—</div>
+                </div>
+                <div class="info-divider"></div>
+                <div class="info-row">
+                    <div class="info-label">Ultima apertura</div>
+                    <div class="info-value" id="last-open">—</div>
+                </div>
+                <div class="info-divider"></div>
+                <div class="info-row">
+                    <div class="info-label">Frame rate</div>
+                    <div class="info-value" id="fps-val">—</div>
+                </div>
+            </div>
+        </div>
 
-</div>
+        <div class="feedback-bar" id="feedback">
+            <span class="fb-prefix">SYS &gt;</span>
+            <span id="feedback-text">In attesa di comandi...</span>
+        </div>
+
+    </div><!-- /tab-monitor -->
+
+    <!-- ══ ZONE EDITOR TAB ══ -->
+    <div class="tab-panel" id="tab-zones">
+
+        <div class="ze-layout">
+
+            <!-- Canvas column -->
+            <div class="ze-canvas-col">
+                <div class="ze-toolbar">
+                    <button class="ze-btn active" id="ze-btn-draw" onclick="zeSetMode('draw')">✦ Disegna</button>
+                    <button class="ze-btn" id="ze-btn-select" onclick="zeSetMode('select')">⊹ Seleziona</button>
+                    <div class="ze-divider"></div>
+                    <button class="ze-btn" onclick="zeRefreshCamera()">↻ Aggiorna</button>
+                    <button class="ze-btn danger" onclick="zeClearAll()">⊗ Cancella tutto</button>
+                </div>
+
+                <div class="ze-canvas-wrapper" id="ze-wrapper"
+                     onmousedown="zeMouseDown(event)"
+                     onmousemove="zeMouseMove(event)"
+                     onmouseup="zeMouseUp(event)"
+                     onmouseleave="zeMouseLeave(event)">
+                    <canvas id="ze-bg-canvas"></canvas>
+                    <canvas id="ze-draw-canvas"></canvas>
+                    <div class="ze-no-camera" id="ze-no-camera">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                            <circle cx="12" cy="13" r="4"/>
+                        </svg>
+                        Clicca Aggiorna per caricare<br>il frame della telecamera
+                    </div>
+                    <div class="ze-mode-badge draw" id="ze-mode-badge">Draw</div>
+                </div>
+
+                <div class="ze-coords" id="ze-coords">—</div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="ze-sidebar">
+
+                <div class="ze-section">
+                    <div class="ze-section-title">Sorgente camera</div>
+                    <label class="ze-field-label">Snapshot URL</label>
+                    <div class="ze-input-row">
+                        <input class="ze-input" id="ze-cam-url"
+                               value="/api/camera_proxy/camera.ingresso_high_quality"
+                               placeholder="/api/camera_proxy/camera.xxx"
+                               onkeydown="if(event.key==='Enter') zeRefreshCamera()" />
+                    </div>
+                </div>
+
+                <div class="ze-section">
+                    <div class="ze-section-title">Zone maschera</div>
+                    <div class="ze-zones-list" id="ze-zones-list">
+                        <div class="ze-empty" id="ze-empty">Nessuna zona.<br>Disegna sul frame<br>per aggiungerne una.</div>
+                    </div>
+                </div>
+
+                <div class="ze-section">
+                    <div class="ze-section-title">Output config.yaml</div>
+                    <div class="ze-yaml-label">privacy_zones</div>
+                    <pre id="ze-yaml-output">— disegna per generare —</pre>
+                </div>
+
+                <div class="ze-section" style="gap:8px; display:flex; flex-direction:column;">
+                    <div class="ze-count" id="ze-count"><strong>0</strong> zone configurate</div>
+                    <button class="ze-copy-btn" onclick="zeCopyYaml()">⧉ Copia YAML</button>
+                </div>
+
+            </div>
+        </div>
+
+    </div><!-- /tab-zones -->
+
+</div><!-- /shell -->
+
+<div id="toast"></div>
 
 <!-- Token screen -->
 <div id="token-screen">
@@ -563,16 +577,15 @@
 </div>
 
 <script>
-    // --- CONFIG ---
+    // ══════════════════════════════════════════════════════════
+    // CONFIG
+    // ══════════════════════════════════════════════════════════
     const CAMERA_ENTITY = "camera.ingresso_high_quality";
     const SWITCH_ENTITY = "switch.cancello";
-    const HASS_URL = window.location.origin;
-    const TOKEN = localStorage.getItem("ha_token") || "";
+    const HASS_URL      = window.location.origin;
+    const TOKEN         = localStorage.getItem("ha_token") || "";
 
-    // --- Token gate ---
-    if (!TOKEN) {
-        document.getElementById("token-screen").style.display = "flex";
-    }
+    if (!TOKEN) document.getElementById("token-screen").style.display = "flex";
 
     function saveToken() {
         const t = document.getElementById("token-input").value.trim();
@@ -580,12 +593,22 @@
         localStorage.setItem("ha_token", t);
         location.reload();
     }
+    document.getElementById("token-input")?.addEventListener("keydown", e => { if (e.key === "Enter") saveToken(); });
 
-    document.getElementById("token-input")?.addEventListener("keydown", e => {
-        if (e.key === "Enter") saveToken();
-    });
+    // ══════════════════════════════════════════════════════════
+    // TABS
+    // ══════════════════════════════════════════════════════════
+    function switchTab(name) {
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`tab-${name}`).classList.add('active');
+        document.getElementById(`tab-${name}-btn`).classList.add('active');
+        if (name === 'zones' && !zeCameraImage) zeRefreshCamera();
+    }
 
-    // --- Timestamp ---
+    // ══════════════════════════════════════════════════════════
+    // MONITOR TAB
+    // ══════════════════════════════════════════════════════════
     function updateTimestamp() {
         const now = new Date();
         document.getElementById("cam-timestamp").textContent =
@@ -594,22 +617,14 @@
     setInterval(updateTimestamp, 1000);
     updateTimestamp();
 
-    // --- FPS counter ---
-    let lastFrameTime = null;
-    let frameCount = 0;
-    let fps = 0;
+    let lastFrameTime = null, fps = 0;
+    setInterval(() => { document.getElementById("fps-val").textContent = fps > 0 ? `${fps} fps` : "—"; }, 1000);
 
-    function updateFps() {
-        document.getElementById("fps-val").textContent = fps > 0 ? `${fps} fps` : "—";
-    }
-    setInterval(updateFps, 1000);
-
-    // --- Camera snapshot polling ---
-    const feed = document.getElementById("camera-feed");
-    const offlineEl = document.getElementById("camera-offline");
-    const camStatusEl = document.getElementById("cam-status-val");
-    let snapshotUrl = null;
-    let cameraOk = false;
+    const feed          = document.getElementById("camera-feed");
+    const offlineEl     = document.getElementById("camera-offline");
+    const camStatusEl   = document.getElementById("cam-status-val");
+    let snapshotUrl     = null;
+    let cameraOk        = false;
     let consecutiveFails = 0;
 
     async function refreshSnapshot() {
@@ -626,21 +641,12 @@
             feed.classList.add("loaded");
             if (snapshotUrl) URL.revokeObjectURL(snapshotUrl);
             snapshotUrl = newUrl;
-
-            // FPS
-            if (lastFrameTime) {
-                const delta = (t0 - lastFrameTime) / 1000;
-                fps = Math.round(1 / delta);
-            }
+            if (lastFrameTime) fps = Math.round(1000 / (t0 - lastFrameTime));
             lastFrameTime = t0;
-            frameCount++;
-
             if (!cameraOk) {
-                cameraOk = true;
-                consecutiveFails = 0;
+                cameraOk = true; consecutiveFails = 0;
                 offlineEl.style.display = "none";
-                camStatusEl.textContent = "ONLINE";
-                camStatusEl.className = "info-value active";
+                camStatusEl.textContent = "ONLINE"; camStatusEl.className = "info-value active";
             }
         } catch(e) {
             consecutiveFails++;
@@ -648,18 +654,14 @@
                 cameraOk = false;
                 offlineEl.style.display = "flex";
                 offlineEl.querySelector("span").textContent = "NO SIGNAL";
-                camStatusEl.textContent = "OFFLINE";
-                camStatusEl.className = "info-value";
-                fps = 0;
-                lastFrameTime = null;
+                camStatusEl.textContent = "OFFLINE"; camStatusEl.className = "info-value";
+                fps = 0; lastFrameTime = null;
             }
         }
     }
-
     refreshSnapshot();
     setInterval(refreshSnapshot, 500);
 
-    // --- Open gate ---
     async function openGate() {
         const btn = document.getElementById("open-btn");
         const btnText = document.getElementById("btn-text");
@@ -668,49 +670,308 @@
         const feedbackText = document.getElementById("feedback-text");
 
         btn.disabled = true;
-        btnIcon.textContent = "⏳";
-        btnText.textContent = "APERTURA IN CORSO...";
+        btnIcon.textContent = "⏳"; btnText.textContent = "APERTURA IN CORSO...";
         feedbackEl.className = "feedback-bar";
         feedbackText.textContent = "Invio comando a switch.cancello...";
 
         try {
             const res = await fetch(`${HASS_URL}/api/services/switch/turn_on`, {
                 method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${TOKEN}`,
-                    "Content-Type": "application/json"
-                },
+                headers: { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" },
                 body: JSON.stringify({ entity_id: SWITCH_ENTITY })
             });
-
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
             feedbackEl.className = "feedback-bar ok";
             feedbackText.textContent = "Cancello aperto — comando eseguito";
-            btnIcon.textContent = "✅";
-            btnText.textContent = "CANCELLO APERTO";
-
+            btnIcon.textContent = "✅"; btnText.textContent = "CANCELLO APERTO";
             const now = new Date().toLocaleTimeString("it-IT", { hour12: false });
             document.getElementById("last-open").textContent = now;
             document.getElementById("last-open").className = "info-value active";
-
             setTimeout(() => {
                 btn.disabled = false;
-                btnIcon.textContent = "🔓";
-                btnText.textContent = "APRI CANCELLO";
+                btnIcon.textContent = "🔓"; btnText.textContent = "APRI CANCELLO";
                 feedbackEl.className = "feedback-bar";
                 feedbackText.textContent = "In attesa di comandi...";
                 document.getElementById("last-open").className = "info-value";
             }, 3000);
-
         } catch(e) {
             feedbackEl.className = "feedback-bar err";
             feedbackText.textContent = `Errore: ${e.message}`;
             btn.disabled = false;
-            btnIcon.textContent = "🔓";
-            btnText.textContent = "APRI CANCELLO";
+            btnIcon.textContent = "🔓"; btnText.textContent = "APRI CANCELLO";
         }
     }
+
+    // ══════════════════════════════════════════════════════════
+    // ZONE EDITOR
+    // ══════════════════════════════════════════════════════════
+    const ZE_COLORS = ['#ff6b35','#00e5ff','#ff3b55','#00c97a','#ffd600','#b06af5'];
+
+    let zeZones        = [];
+    let zeSelected     = null;
+    let zeMode         = 'draw';
+    let zeDrawing      = false;
+    let zeDrawStart    = null;
+    let zeDrawCurrent  = null;
+    let zeCameraImage  = null;
+    let zeNatW = 1, zeNatH = 1;
+    let zeScW  = 1, zeScH  = 1;
+    let zeOffX = 0, zeOffY = 0;
+
+    const zeBgCanvas   = document.getElementById('ze-bg-canvas');
+    const zeDrawCanvas = document.getElementById('ze-draw-canvas');
+    const zeBgCtx      = zeBgCanvas.getContext('2d');
+    const zeDrawCtx    = zeDrawCanvas.getContext('2d');
+    const zeWrapper    = document.getElementById('ze-wrapper');
+    const zeNoCam      = document.getElementById('ze-no-camera');
+
+    function zeResizeCanvases(w, h) {
+        zeBgCanvas.width   = zeDrawCanvas.width   = w;
+        zeBgCanvas.height  = zeDrawCanvas.height  = h;
+        zeBgCanvas.style.width  = zeDrawCanvas.style.width  = w + 'px';
+        zeBgCanvas.style.height = zeDrawCanvas.style.height = h + 'px';
+    }
+
+    function zeToImg(cx, cy)    { return { x: Math.round((cx - zeOffX) / zeScW * zeNatW), y: Math.round((cy - zeOffY) / zeScH * zeNatH) }; }
+    function zeToCanvas(ix, iy) { return { x: zeOffX + (ix / zeNatW) * zeScW, y: zeOffY + (iy / zeNatH) * zeScH }; }
+    function zeClamp(cx, cy)    { return { x: Math.max(zeOffX, Math.min(zeOffX + zeScW, cx)), y: Math.max(zeOffY, Math.min(zeOffY + zeScH, cy)) }; }
+
+    function zeRender() {
+        zeBgCtx.clearRect(0, 0, zeBgCanvas.width, zeBgCanvas.height);
+        if (zeCameraImage) zeBgCtx.drawImage(zeCameraImage, zeOffX, zeOffY, zeScW, zeScH);
+
+        zeDrawCtx.clearRect(0, 0, zeDrawCanvas.width, zeDrawCanvas.height);
+        zeZones.forEach((z, i) => {
+            const a = zeToCanvas(z.x1, z.y1), b = zeToCanvas(z.x2, z.y2);
+            const w = b.x - a.x, h = b.y - a.y;
+            const col = ZE_COLORS[i % ZE_COLORS.length];
+            zeDrawCtx.fillStyle = 'rgba(0,0,0,.75)';
+            zeDrawCtx.fillRect(a.x, a.y, w, h);
+            zeDrawCtx.strokeStyle = col;
+            zeDrawCtx.lineWidth = zeSelected === i ? 2 : 1;
+            zeDrawCtx.setLineDash(zeSelected === i ? [] : [4, 3]);
+            zeDrawCtx.strokeRect(a.x + .5, a.y + .5, w - 1, h - 1);
+            zeDrawCtx.setLineDash([]);
+            const lbl = z.label || `Zona ${i+1}`;
+            zeDrawCtx.font = '10px Share Tech Mono, monospace';
+            const tw = zeDrawCtx.measureText(lbl).width;
+            zeDrawCtx.fillStyle = col;
+            zeDrawCtx.fillRect(a.x, a.y - 16, tw + 10, 16);
+            zeDrawCtx.fillStyle = '#000';
+            zeDrawCtx.fillText(lbl, a.x + 5, a.y - 4);
+        });
+
+        if (zeDrawing && zeDrawStart && zeDrawCurrent) {
+            const rx = Math.min(zeDrawStart.x, zeDrawCurrent.x);
+            const ry = Math.min(zeDrawStart.y, zeDrawCurrent.y);
+            const rw = Math.abs(zeDrawCurrent.x - zeDrawStart.x);
+            const rh = Math.abs(zeDrawCurrent.y - zeDrawStart.y);
+            zeDrawCtx.fillStyle = 'rgba(0,0,0,.55)';
+            zeDrawCtx.fillRect(rx, ry, rw, rh);
+            zeDrawCtx.strokeStyle = '#ff6b35';
+            zeDrawCtx.lineWidth = 1.5;
+            zeDrawCtx.setLineDash([5, 3]);
+            zeDrawCtx.strokeRect(rx + .5, ry + .5, rw - 1, rh - 1);
+            zeDrawCtx.setLineDash([]);
+            const iw = Math.abs(zeToImg(zeDrawCurrent.x, 0).x - zeToImg(zeDrawStart.x, 0).x);
+            const ih = Math.abs(zeToImg(0, zeDrawCurrent.y).y - zeToImg(0, zeDrawStart.y).y);
+            zeDrawCtx.fillStyle = '#ff6b35';
+            zeDrawCtx.font = '10px Share Tech Mono, monospace';
+            zeDrawCtx.fillText(`${iw}×${ih}px`, rx + 4, ry + rh + 14);
+        }
+    }
+
+    function zeLayout() {
+        const W = zeWrapper.clientWidth, H = zeWrapper.clientHeight;
+        const ratio = zeNatW / zeNatH;
+        let w = W, h = W / ratio;
+        if (h > H) { h = H; w = h * ratio; }
+        zeScW = w; zeScH = h;
+        zeOffX = Math.round((W - w) / 2);
+        zeOffY = Math.round((H - h) / 2);
+        zeResizeCanvases(W, H);
+        zeRender();
+    }
+
+    async function zeRefreshCamera() {
+        const url = document.getElementById('ze-cam-url').value.trim();
+        if (!url) { zeShowToast('Inserisci URL camera', 'err'); return; }
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+
+        const loadPromise = new Promise((res, rej) => {
+            img.onload = res; img.onerror = rej;
+            if (TOKEN) {
+                fetch(url, { headers: { 'Authorization': `Bearer ${TOKEN}` } })
+                    .then(r => r.blob()).then(b => { img.src = URL.createObjectURL(b); }).catch(rej);
+            } else {
+                img.src = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+            }
+        });
+
+        try {
+            await loadPromise;
+            zeCameraImage = img;
+            zeNatW = img.naturalWidth || img.width;
+            zeNatH = img.naturalHeight || img.height;
+            zeLayout();
+            zeNoCam.style.display = 'none';
+            zeShowToast('Frame caricato ✓', 'ok');
+        } catch {
+            zeShowToast('Caricamento fallito — check URL / token', 'err');
+            zeLoadPlaceholder();
+        }
+    }
+
+    function zeLoadPlaceholder() {
+        const W = 1280, H = 720;
+        zeNatW = W; zeNatH = H;
+        const tmp = document.createElement('canvas');
+        tmp.width = W; tmp.height = H;
+        const ctx = tmp.getContext('2d');
+        ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = 'rgba(240,165,0,.07)'; ctx.lineWidth = 1;
+        for (let x = 0; x <= W; x += 80) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+        for (let y = 0; y <= H; y += 80) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+        ctx.fillStyle = 'rgba(240,165,0,.25)'; ctx.font = 'bold 16px Share Tech Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('CAMERA OFFLINE — TEST PATTERN', W / 2, H / 2 - 10);
+        ctx.fillStyle = 'rgba(240,165,0,.12)'; ctx.font = '12px Share Tech Mono, monospace';
+        ctx.fillText(`${W} × ${H} px`, W / 2, H / 2 + 16);
+        const img = new Image();
+        img.onload = () => { zeCameraImage = img; zeLayout(); zeNoCam.style.display = 'none'; };
+        img.src = tmp.toDataURL();
+    }
+
+    function zeSetMode(m) {
+        zeMode = m;
+        document.getElementById('ze-btn-draw').classList.toggle('active', m === 'draw');
+        document.getElementById('ze-btn-select').classList.toggle('active', m === 'select');
+        zeWrapper.className = 'ze-canvas-wrapper' + (m === 'select' ? ' mode-select' : '');
+        const badge = document.getElementById('ze-mode-badge');
+        badge.textContent = m === 'draw' ? 'Draw' : 'Select';
+        badge.className = `ze-mode-badge ${m}`;
+    }
+
+    function zeCanvasCoords(e) {
+        const r = zeDrawCanvas.getBoundingClientRect();
+        return { x: e.clientX - r.left, y: e.clientY - r.top };
+    }
+
+    function zeMouseDown(e) {
+        if (!zeCameraImage) return;
+        const { x, y } = zeCanvasCoords(e);
+        if (zeMode === 'draw') {
+            zeDrawing = true; zeDrawStart = zeClamp(x, y); zeDrawCurrent = { ...zeDrawStart };
+        } else {
+            const ip = zeToImg(x, y);
+            let found = -1;
+            for (let i = zeZones.length - 1; i >= 0; i--) {
+                const z = zeZones[i];
+                if (ip.x >= z.x1 && ip.x <= z.x2 && ip.y >= z.y1 && ip.y <= z.y2) { found = i; break; }
+            }
+            zeSelected = found; zeHighlight(found); zeRender();
+        }
+    }
+
+    function zeMouseMove(e) {
+        const { x, y } = zeCanvasCoords(e);
+        const ip = zeToImg(x, y);
+        if (ip.x >= 0 && ip.x <= zeNatW && ip.y >= 0 && ip.y <= zeNatH)
+            document.getElementById('ze-coords').textContent = `x: ${ip.x}  y: ${ip.y}  (${zeNatW}×${zeNatH})`;
+        if (zeDrawing && zeMode === 'draw') { zeDrawCurrent = zeClamp(x, y); zeRender(); }
+    }
+
+    function zeMouseUp(e) {
+        if (!zeDrawing || zeMode !== 'draw') return;
+        zeDrawing = false;
+        const a = zeToImg(zeDrawStart.x, zeDrawStart.y);
+        const b = zeToImg(zeDrawCurrent.x, zeDrawCurrent.y);
+        const x1 = Math.min(a.x, b.x), y1 = Math.min(a.y, b.y);
+        const x2 = Math.max(a.x, b.x), y2 = Math.max(a.y, b.y);
+        if (x2 - x1 > 5 && y2 - y1 > 5) {
+            zeZones.push({ x1, y1, x2, y2, label: `Zona ${zeZones.length + 1}` });
+            zeRenderList(); zeRender();
+            zeShowToast(`Zona aggiunta (${x2-x1}×${y2-y1}px)`, 'ok');
+        }
+        zeDrawStart = zeDrawCurrent = null; zeRender();
+    }
+
+    function zeMouseLeave(e) { if (zeDrawing) zeMouseUp(e); }
+
+    function zeDeleteZone(i) {
+        zeZones.splice(i, 1);
+        if (zeSelected === i) zeSelected = null;
+        else if (zeSelected > i) zeSelected--;
+        zeRenderList(); zeRender();
+    }
+
+    function zeHighlight(i) {
+        document.querySelectorAll('.ze-zone-item').forEach((el, idx) => {
+            el.classList.toggle('selected', idx === i);
+            if (idx === i) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+    }
+
+    function zeRenderList() {
+        const list = document.getElementById('ze-zones-list');
+        const empty = document.getElementById('ze-empty');
+        empty.style.display = zeZones.length ? 'none' : 'block';
+        list.querySelectorAll('.ze-zone-item').forEach(el => el.remove());
+        zeZones.forEach((z, i) => {
+            const col = ZE_COLORS[i % ZE_COLORS.length];
+            const div = document.createElement('div');
+            div.className = 'ze-zone-item' + (zeSelected === i ? ' selected' : '');
+            div.innerHTML = `
+            <div class="ze-zone-header">
+                <div class="ze-zone-dot" style="background:${col}"></div>
+                <input class="ze-zone-name" value="${z.label || `Zona ${i+1}`}"
+                    oninput="zeZones[${i}].label=this.value; zeRender(); zeUpdateYaml()"
+                    onclick="event.stopPropagation()" />
+            </div>
+            <div class="ze-zone-coords">x1:${z.x1} y1:${z.y1} · x2:${z.x2} y2:${z.y2} — ${z.x2-z.x1}×${z.y2-z.y1}px</div>
+            <div class="ze-zone-actions">
+                <button class="ze-zone-btn del" onclick="event.stopPropagation(); zeDeleteZone(${i})">Elimina</button>
+            </div>`;
+            div.onclick = () => { zeSelected = i; zeHighlight(i); zeRender(); };
+            list.appendChild(div);
+        });
+        document.getElementById('ze-count').innerHTML = `<strong>${zeZones.length}</strong> zona${zeZones.length !== 1 ? 'e' : ''} configurata${zeZones.length !== 1 ? 'e' : ''}`;
+        zeUpdateYaml();
+    }
+
+    function zeUpdateYaml() {
+        if (!zeZones.length) { document.getElementById('ze-yaml-output').textContent = '— disegna per generare —'; return; }
+        let yaml = 'privacy_zones:\n';
+        zeZones.forEach(z => {
+            yaml += `  - label: "${z.label || 'zona'}"\n    x1: ${z.x1}\n    y1: ${z.y1}\n    x2: ${z.x2}\n    y2: ${z.y2}\n`;
+        });
+        document.getElementById('ze-yaml-output').textContent = yaml.trimEnd();
+    }
+
+    function zeCopyYaml() {
+        if (!zeZones.length) { zeShowToast('Nessuna zona da copiare', 'err'); return; }
+        const yaml = document.getElementById('ze-yaml-output').textContent;
+        navigator.clipboard.writeText(yaml).then(() => zeShowToast('YAML copiato ✓', 'ok'));
+    }
+
+    function zeClearAll() {
+        if (!zeZones.length) return;
+        if (!confirm(`Eliminare tutte le ${zeZones.length} zone?`)) return;
+        zeZones = []; zeSelected = null; zeRenderList(); zeRender();
+    }
+
+    function zeShowToast(msg, type = '') {
+        const t = document.getElementById('toast');
+        t.textContent = msg; t.className = 'show ' + type;
+        clearTimeout(t._timer);
+        t._timer = setTimeout(() => { t.className = type; }, 2800);
+    }
+
+    window.addEventListener('resize', () => { if (zeCameraImage) zeLayout(); });
+    zeSetMode('draw');
+    zeRenderList();
 </script>
 </body>
 </html>

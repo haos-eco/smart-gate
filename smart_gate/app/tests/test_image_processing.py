@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 import cv2
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from image_processing import (
     apply_roi,
@@ -22,7 +22,9 @@ from image_processing import (
 def preload_trocr():
     """Carica TrOCR una volta sola per tutta la sessione di test."""
     from trocr import load_trocr
+
     load_trocr()
+
 
 def make_blank(h=100, w=200):
     return np.zeros((h, w, 3), dtype=np.uint8)

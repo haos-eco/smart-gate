@@ -3,19 +3,17 @@ import numpy as np
 import os
 import urllib.request
 
-if os.path.exists('/config'):
+if os.path.exists("/config"):
     # Home Assistant addon (production)
     _SR_MODEL_PATH = "/config/www/smart_gate/models/ai/EDSR_x2.pb"
 else:
     # Local development/testing
     _SR_MODEL_PATH = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "models",
-        "ai",
-        "EDSR_x2.pb"
+        os.path.dirname(os.path.abspath(__file__)), "models", "ai", "EDSR_x2.pb"
     )
 
 _SR_MODEL = None
+
 
 def download_sr_model():
     """Download AI super-resolution model if not present"""
@@ -36,13 +34,13 @@ def download_sr_model():
         {
             "name": "EDSR_x2.pb",
             "url": "https://github.com/Saafke/EDSR_Tensorflow/raw/master/models/EDSR_x2.pb",
-            "type": "edsr"
+            "type": "edsr",
         },
         {
             "name": "FSRCNN_x2.pb",
             "url": "https://github.com/Saafke/FSRCNN_Tensorflow/raw/master/models/FSRCNN_x2.pb",
-            "type": "fsrcnn"
-        }
+            "type": "fsrcnn",
+        },
     ]
 
     for model_info in models:
@@ -52,12 +50,10 @@ def download_sr_model():
             def show_progress(block_num, block_size, total_size):
                 downloaded = block_num * block_size
                 percent = min(downloaded * 100 / total_size, 100)
-                print(f"\r   Progress: {percent:.1f}%", end='', flush=True)
+                print(f"\r   Progress: {percent:.1f}%", end="", flush=True)
 
             urllib.request.urlretrieve(
-                model_info['url'],
-                _SR_MODEL_PATH,
-                reporthook=show_progress
+                model_info["url"], _SR_MODEL_PATH, reporthook=show_progress
             )
             print()
 
@@ -68,9 +64,9 @@ def download_sr_model():
                 continue
 
             print(f"   ✅ Downloaded successfully ({size_mb:.2f}MB)")
-            model_type_file = _SR_MODEL_PATH.replace('.pb', '.type')
-            with open(model_type_file, 'w') as f:
-                f.write(model_info['type'])
+            model_type_file = _SR_MODEL_PATH.replace(".pb", ".type")
+            with open(model_type_file, "w") as f:
+                f.write(model_info["type"])
             return True
 
         except Exception as e:
@@ -84,11 +80,12 @@ def download_sr_model():
 
 
 def get_model_type():
-    model_type_file = _SR_MODEL_PATH.replace('.pb', '.type')
+    model_type_file = _SR_MODEL_PATH.replace(".pb", ".type")
     if os.path.exists(model_type_file):
-        with open(model_type_file, 'r') as f:
+        with open(model_type_file, "r") as f:
             return f.read().strip()
     return "edsr"
+
 
 def get_sr_model():
     """Get or initialize super-resolution model"""
@@ -110,6 +107,7 @@ def get_sr_model():
         print(f"⚠️  Failed to load SR model: {e}")
         return None
 
+
 def apply_roi(img_bgr, roi):
     """Apply region of interest to image.
     Args:
@@ -130,7 +128,7 @@ def remove_plate_border(img_crop):
     h, w = img_crop.shape[:2]
     margin_h = int(h * 0.18)
     margin_w = int(w * 0.08)
-    return img_crop[margin_h:h-margin_h, margin_w:w-margin_w]
+    return img_crop[margin_h : h - margin_h, margin_w : w - margin_w]
 
 
 def crop_white_area(img_bgr):
@@ -167,7 +165,9 @@ def fix_headlight_overexposure(img_bgr, debug: bool = False) -> np.ndarray:
     """Recover plate characters from headlight overexposure via gamma + CLAHE + invert."""
     # Gamma correction — compresses saturated highlights back into readable range
     gamma = 0.4
-    lut = np.array([min(255, int((i / 255.0) ** gamma * 255)) for i in range(256)], dtype=np.uint8)
+    lut = np.array(
+        [min(255, int((i / 255.0) ** gamma * 255)) for i in range(256)], dtype=np.uint8
+    )
     img_bgr = cv2.LUT(img_bgr, lut)
 
     if debug:
@@ -189,6 +189,7 @@ def fix_headlight_overexposure(img_bgr, debug: bool = False) -> np.ndarray:
             print("  Headlight fix: inverted (light background)")
 
     return img_bgr
+
 
 def deskew_plate(img):
     """Correct plate skew using Hough lines. Angles <0.5° are ignored."""
@@ -215,7 +216,9 @@ def deskew_plate(img):
 
     h, w = img.shape[:2]
     m = cv2.getRotationMatrix2D((w // 2, h // 2), median_angle, 1.0)
-    return cv2.warpAffine(img, m, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+    return cv2.warpAffine(
+        img, m, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE
+    )
 
 
 def apply_sr_and_upscale(img_bgr, debug=False):
@@ -231,7 +234,9 @@ def apply_sr_and_upscale(img_bgr, debug=False):
         except Exception as e:
             if debug:
                 print(f"  SR error: {e}, using bicubic fallback")
-            img_bgr = cv2.resize(img_bgr, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+            img_bgr = cv2.resize(
+                img_bgr, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC
+            )
     else:
         img_bgr = cv2.resize(img_bgr, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
         if debug:
@@ -240,9 +245,13 @@ def apply_sr_and_upscale(img_bgr, debug=False):
     h_new, w_new = img_bgr.shape[:2]
     if h_new < 400:
         scale = 400 / h_new
-        img_bgr = cv2.resize(img_bgr, None, fx=scale, fy=scale, interpolation=cv2.INTER_LANCZOS4)
+        img_bgr = cv2.resize(
+            img_bgr, None, fx=scale, fy=scale, interpolation=cv2.INTER_LANCZOS4
+        )
         if debug:
-            print(f"  LANCZOS4: {w_new}x{h_new} → {img_bgr.shape[1]}x{img_bgr.shape[0]}")
+            print(
+                f"  LANCZOS4: {w_new}x{h_new} → {img_bgr.shape[1]}x{img_bgr.shape[0]}"
+            )
 
     return img_bgr
 

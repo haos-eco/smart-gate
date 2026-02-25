@@ -4,23 +4,24 @@ import pytest
 import numpy as np
 from unittest.mock import Mock, patch
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from detection import detect_plates
+
 
 def test_load_model():
     """Test model loading"""
     # Patch onnxruntime before importing load_model
-    with patch('onnxruntime.InferenceSession') as mock_session_class:
+    with patch("onnxruntime.InferenceSession") as mock_session_class:
         # Import here to use the patched version
         from detection import load_model
 
         # Configure the mock
         mock_input = Mock()
-        mock_input.name = 'images'
+        mock_input.name = "images"
 
         mock_output = Mock()
-        mock_output.name = 'output0'
+        mock_output.name = "output0"
 
         mock_sess = Mock()
         mock_sess.get_inputs.return_value = [mock_input]
@@ -28,27 +29,22 @@ def test_load_model():
 
         mock_session_class.return_value = mock_sess
 
-        sess, inp, out = load_model('../models/yolo/model.onnx')
+        sess, inp, out = load_model("../models/yolo/model.onnx")
 
-        assert inp == 'images'
-        assert out == 'output0'
+        assert inp == "images"
+        assert out == "output0"
         assert sess == mock_sess
         mock_session_class.assert_called_once_with(
-            '../models/yolo/model.onnx',
-            providers=["CPUExecutionProvider"]
+            "../models/yolo/model.onnx", providers=["CPUExecutionProvider"]
         )
+
 
 def test_detect_plates_finds_plate(mock_onnx_session):
     """Test plate detection"""
     img = np.zeros((480, 640, 3), dtype=np.uint8)
 
     boxes = detect_plates(
-        mock_onnx_session,
-        'images',
-        'output0',
-        img,
-        conf=0.5,
-        debug=False
+        mock_onnx_session, "images", "output0", img, conf=0.5, debug=False
     )
 
     assert len(boxes) == 1
@@ -57,6 +53,7 @@ def test_detect_plates_finds_plate(mock_onnx_session):
     assert 0 <= x1 < x2 <= 640
     assert 0 <= y1 < y2 <= 480
 
+
 def test_detect_plates_no_detections():
     """Test with no detections"""
     mock_session = Mock()
@@ -64,30 +61,21 @@ def test_detect_plates_no_detections():
 
     img = np.zeros((480, 640, 3), dtype=np.uint8)
 
-    boxes = detect_plates(
-        mock_session,
-        'images',
-        'output0',
-        img,
-        conf=0.5
-    )
+    boxes = detect_plates(mock_session, "images", "output0", img, conf=0.5)
 
     assert len(boxes) == 0
+
 
 def test_detect_plates_filters_low_confidence(mock_onnx_session):
     """Test that low confidence detections are filtered"""
     img = np.zeros((480, 640, 3), dtype=np.uint8)
 
     boxes = detect_plates(
-        mock_onnx_session,
-        'images',
-        'output0',
-        img,
-        conf=0.9,
-        debug=False
+        mock_onnx_session, "images", "output0", img, conf=0.9, debug=False
     )
 
     assert len(boxes) == 0
+
 
 def test_detect_plates_multiple_detections():
     """Test with multiple detections"""
@@ -101,17 +89,12 @@ def test_detect_plates_multiple_detections():
 
     img = np.zeros((480, 640, 3), dtype=np.uint8)
 
-    boxes = detect_plates(
-        mock_session,
-        'images',
-        'output0',
-        img,
-        conf=0.5
-    )
+    boxes = detect_plates(mock_session, "images", "output0", img, conf=0.5)
 
     assert len(boxes) == 3
     for box in boxes:
         assert box[4] > 0.5
+
 
 def test_detect_plates_confidence_normalization():
     """Test confidence normalization when > 1"""
@@ -123,16 +106,11 @@ def test_detect_plates_confidence_normalization():
 
     img = np.zeros((480, 640, 3), dtype=np.uint8)
 
-    boxes = detect_plates(
-        mock_session,
-        'images',
-        'output0',
-        img,
-        conf=0.5
-    )
+    boxes = detect_plates(mock_session, "images", "output0", img, conf=0.5)
 
     assert len(boxes) == 1
     assert 0.7 < boxes[0][4] < 0.9
+
 
 def test_detect_plates_bbox_clamping():
     """Test that bounding boxes are clamped to image boundaries"""
@@ -146,13 +124,7 @@ def test_detect_plates_bbox_clamping():
 
     img = np.zeros((480, 640, 3), dtype=np.uint8)
 
-    boxes = detect_plates(
-        mock_session,
-        'images',
-        'output0',
-        img,
-        conf=0.5
-    )
+    boxes = detect_plates(mock_session, "images", "output0", img, conf=0.5)
 
     assert len(boxes) == 1
     x1, y1, x2, y2, _ = boxes[0]

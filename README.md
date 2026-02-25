@@ -31,16 +31,54 @@ pip install -r requirements-test.txt
 
 This configures pre-commit hooks to run tests automatically before each commit.
 
-### 4. Testing
+---
 
-#### Run All Tests
+## Code Formatting
+
+This project uses [Black](https://black.readthedocs.io/) for Python formatting. All code must be formatted before committing.
+
+### Format all files
+```bash
+black .
+```
+
+### Format a single file
+```bash
+black app/main.py
+```
+
+### Check without modifying (CI-friendly)
+```bash
+black --check .
+```
+
+### VS Code integration
+
+Install the [Black Formatter](https://marketplace.visualstudio.com/items?itemName=ms-python.black-formatter) extension, then add to `.vscode/settings.json`:
+
+```json
+{
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true
+  }
+}
+```
+
+The pre-commit hook runs `black --check .` automatically — commits will be rejected if any file is not formatted.
+
+---
+
+## Testing
+
+### Run All Tests
 
 Execute the complete test suite:
 ```bash
 pytest -v
 ```
 
-#### Run Specific Test File
+### Run Specific Test File
 
 Test a single module:
 ```bash
@@ -54,7 +92,7 @@ pytest app/tests/test_image_processing.py -v
 pytest app/tests/test_ocr.py -v
 ```
 
-#### Run Single Test Function
+### Run Single Test Function
 
 Execute a specific test with detailed output:
 ```bash
@@ -65,7 +103,7 @@ pytest app/tests/test_enhancement_ocr_comparison.py::test_ocr_comparison -v -s
 - `-v` (verbose): Show detailed test names
 - `-s`: Show print statements and logging output
 
-#### Run Tests with Coverage
+### Run Tests with Coverage
 
 Generate coverage report:
 ```bash
@@ -77,7 +115,7 @@ pytest --cov=. --cov-report=html
 # Open htmlcov/index.html in browser
 ```
 
-#### Run Tests Matching Pattern
+### Run Tests Matching Pattern
 
 Execute tests by name pattern:
 ```bash
@@ -88,7 +126,7 @@ pytest -k "ocr" -v
 pytest -k "comparison" -v
 ```
 
-#### Quick Test Commands
+### Quick Test Commands
 ```bash
 # Fast: skip slow tests
 pytest -v -m "not slow"
@@ -100,7 +138,7 @@ pytest -x
 ptw -- -v
 ```
 
-#### Add Test Images
+### Add Test Images
 
 For OCR comparison tests, add real plate images:
 ```bash
@@ -125,9 +163,11 @@ Old match: ❌
 New match: ✅ IMPROVED
 ```
 
+---
+
 ## Git Hooks
 
-Pre-commit hook runs all tests before allowing a commit.
+The pre-commit hook runs `black --check .` and the full test suite before allowing a commit.
 
 To skip (not recommended):
 ```bash
@@ -143,5 +183,3 @@ git commit --no-verify
 [license-shield]: https://img.shields.io/github/license/haos-eco/smart-gate
 [maintenance-shield]: https://img.shields.io/maintenance/yes/2026.svg
 [project-stage-shield]: https://img.shields.io/badge/project%20stage-production%20ready-brightgreen.svg
-
-

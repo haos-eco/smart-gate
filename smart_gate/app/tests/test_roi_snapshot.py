@@ -3,11 +3,11 @@ import sys
 import cv2
 import pytest
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from image_processing import apply_roi
 
-if os.path.exists('smart_gate'):
+if os.path.exists("smart_gate"):
     SNAPSHOT_PATH = "smart_gate/app/tests/fixtures/roi/latest.jpg"
     OUTPUT_PATH = "smart_gate/app/tests/fixtures/roi/latest_roi_output.jpg"
 else:
@@ -15,6 +15,7 @@ else:
     OUTPUT_PATH = "tests/fixtures/roi/latest_roi_output.jpg"
 
 ROI = [0.25, 0.15, 0.55, 0.50]
+
 
 def test_roi_crop_produces_output():
     """Crop snapshot using production ROI and save result for visual inspection."""
