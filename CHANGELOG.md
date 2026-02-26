@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [2.1.0] - 2026-02-25
 
 ### 🚀 Features
 
@@ -13,8 +13,13 @@ All notable changes to this project will be documented in this file.
 
 - Removed duplicated import from main.py
 
+### 🚜 Refactor
+
+- Removed camera_entity useless param from send_visitor_notification
+
 ### 📚 Documentation
 
+- Update changelog [skip ci]
 - Update changelog [skip ci]
 - Update changelog [skip ci]
 - Update changelog [skip ci]
