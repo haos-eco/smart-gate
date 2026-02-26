@@ -1,29 +1,27 @@
 import threading
 import numpy as np
-import yaml
 import cv2
 
-from constants import CONFIG_PATH
+from utils import get_options
 
+# ── Zone state ────────────────────────────────────────────────────────────────
 _zones_lock = threading.Lock()
 _privacy_zones = []
 
+# ── Motion ref frame ──────────────────────────────────────────────────────────
 _motion_ref_frame = None
 _motion_ref_lock = threading.Lock()
 
 
 def _load_privacy_zones():
-    """Read privacy_zones from config.yaml and update the in-memory list."""
+    """Read privacy_zones from addon options (same source as allowed_plates)."""
     global _privacy_zones
     try:
-        with open(CONFIG_PATH) as f:
-            config = yaml.safe_load(f) or {}
-        zones = config.get("privacy_zones", [])
+        opt = get_options()
+        zones = opt.get("privacy_zones", [])
         with _zones_lock:
             _privacy_zones = zones
         print(f"[SmartGate] Privacy zones loaded: {len(zones)} zone(s)")
-    except FileNotFoundError:
-        print(f"[SmartGate] {CONFIG_PATH} not found — privacy zones disabled")
     except Exception as e:
         print(f"[SmartGate] Error loading privacy zones: {e}")
 
@@ -90,12 +88,10 @@ def validate_motion_outside_zones(frame, threshold: float = 0.002) -> bool:
         ref = _motion_ref_frame
 
     if ref is None:
-        # First call — store reference and let the trigger through
         with _motion_ref_lock:
             _motion_ref_frame = gray
         return True
 
-    # Resize ref if shape changed (e.g. first frame after camera reconnect)
     if ref.shape != gray.shape:
         with _motion_ref_lock:
             _motion_ref_frame = gray
@@ -105,15 +101,13 @@ def validate_motion_outside_zones(frame, threshold: float = 0.002) -> bool:
 
     diff = cv2.absdiff(ref, gray)
     _, thresh = cv2.threshold(diff, 25, 255, cv2.THRESH_BINARY)
-
-    # Zero-out the masked zones from the diff
     thresh = cv2.bitwise_and(thresh, thresh, mask=exclusion_mask)
 
     unmasked_pixels = int(np.count_nonzero(exclusion_mask))
     motion_pixels = int(np.count_nonzero(thresh))
 
     if unmasked_pixels == 0:
-        return True
+        return False  # entire frame is masked — no valid area to check, skip trigger
 
     ratio = motion_pixels / unmasked_pixels
 

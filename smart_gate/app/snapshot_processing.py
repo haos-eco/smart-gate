@@ -71,8 +71,9 @@ def annotate_snapshot(
             cv2.LINE_AA,
         )
 
-        base, ext = os.path.splitext(snapshot_path)
-        out_path = f"{base}_annotated{ext}"
+        annotated_dir = os.path.join(os.path.dirname(snapshot_path), "annotated")
+        os.makedirs(annotated_dir, exist_ok=True)
+        out_path = os.path.join(annotated_dir, os.path.basename(snapshot_path))
         cv2.imwrite(out_path, frame)
         return out_path
 

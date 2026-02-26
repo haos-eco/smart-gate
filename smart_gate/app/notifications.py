@@ -36,7 +36,8 @@ def send_visitor_notification(
             ],
             # Tap → opens /lovelace/smart-gate (camera view + open button)
             "url": "/lovelace/smart-gate",
-            "push": {"sound": notification_sound},
+            # iOS companion app modern sound format
+            "push": {"sound": {"name": notification_sound}},
         },
     }
 
@@ -61,7 +62,8 @@ def poll_notification_action(
             f"{HASS_URL}/stream",
             headers={**HEADERS, "Accept": "text/event-stream"},
             stream=True,
-            timeout=timeout,
+            # 10s connect timeout, no read timeout — SSE stream stays open indefinitely
+            timeout=(10, None),
         ) as resp:
             for line in resp.iter_lines():
                 if time.time() > deadline:

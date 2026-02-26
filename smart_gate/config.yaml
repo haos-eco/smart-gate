@@ -1,5 +1,5 @@
 name: Smart Gate
-version: 2.1.0
+version: 2.1.1
 slug: smart_gate
 description: Automatic AI powered license plate recognition gate opener
 url: https://github.com/haos-eco/smart-gate
@@ -19,19 +19,21 @@ options:
   camera_entity: camera.ingresso_high_quality
   gate_switch: switch.cancello
   cooldown_sec: 120
-  allowed_plates:
   roi: "0.0,0.0,1.0,1.0"
   confidence: 0.5
   min_yolo_score: 0.65
   min_ocr_confidence: 0.75
+  visitor_stop_sec: 5
+  allowed_plates: []
+  privacy_zones: []
   model_path: /config/www/smart_gate/models/yolo/model.onnx
   snapshot_path: /config/www/smart_gate/snapshot/latest.jpg
   history_dir: /config/www/smart_gate/snapshot/history
   logs_dir: /config/www/smart_gate/snapshot/logs
   debug_path: /config/www/smart_gate/snapshot/last_plate_crop.jpg
-  visitor_stop_sec: 5
-  notify_services:
+  notify_services: []
   notification_sound: default
+  notify_on_failure: false
   keep_history: false
   keep_history_days: 30
   gpu: false
@@ -40,18 +42,30 @@ schema:
   motion_entity: str
   camera_entity: str
   gate_switch: str
-  cooldown_sec: int
-  allowed_plates:
-    - plate: str
-      person_entity: str?
   roi: str
+  cooldown_sec: int
   confidence: float
   min_yolo_score: float
   min_ocr_confidence: float
+  visitor_stop_sec: int?
+  allowed_plates:
+    - plate: str
+      person_entity: str?
+  privacy_zones:
+    - label: str
+      x1: int
+      y1: int
+      x2: int
+      y2: int
+  model_path: str
+  snapshot_path: str
+  history_dir: str
+  logs_dir: str
+  debug_path: str
   notify_services:
     - str
-  visitor_stop_sec: int?
   notification_sound: str?
+  notify_on_failure: bool
   keep_history: bool
   keep_history_days: int?
   gpu: bool

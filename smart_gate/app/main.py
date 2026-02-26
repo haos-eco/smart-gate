@@ -231,12 +231,10 @@ def main():
                 try:
                     frame = capture_frame(camera_entity, snapshot_path)
                     if frame is not None:
-                        # Apply privacy mask and overwrite snapshot on disk (async)
-                        # so visitor notifications always use the masked image
+                        # Apply privacy mask in memory only — never write the masked
+                        # frame back to snapshot_path or YOLO will read its own
+                        # annotation overlay on the next cycle
                         frame = apply_privacy_mask(frame)
-                        threading.Thread(
-                            target=cv2.imwrite, args=(snapshot_path, frame), daemon=True
-                        ).start()
                     dest[0] = frame
                 except Exception as e:
                     print(f"  ⚠️  Capture error: {e}")
@@ -486,6 +484,9 @@ def main():
                 last_vehicle_snapshot = annotated
                 switch_on(gate_switch)
                 last_open = now
+                visitor_notified = (
+                    True  # gate already opened — suppress visitor notification
+                )
                 print(f"✅ Exact match '{best_plate}' → gate opening")
                 threading.Thread(
                     target=log_event,
@@ -542,6 +543,9 @@ def main():
                     last_vehicle_snapshot = annotated
                     print(
                         f"✅ Fuzzy match + {person_entity} home → gate opening (read '{best_plate}', matched '{matched}')"
+                    )
+                    visitor_notified = (
+                        True  # gate already opened — suppress visitor notification
                     )
                     switch_on(gate_switch)
                     log_event(
