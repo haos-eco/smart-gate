@@ -183,9 +183,8 @@ def main():
                     f"🔔 Vehicle stopped for {visitor_stop_sec}s — sending visitor notification..."
                 )
                 try:
-                    notification_snapshot = last_vehicle_snapshot or snapshot_path
                     send_visitor_notification(
-                        _notify_services, notification_snapshot, notification_sound
+                        _notify_services, snapshot_path, notification_sound
                     )
                     visitor_notified = True
                     print("🔔 Visitor notification sent")

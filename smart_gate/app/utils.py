@@ -57,9 +57,20 @@ def validate_model(model_path: str) -> bool:
 
 def capture_frame(camera_entity, snapshot_path):
     from homeassistant import camera_snapshot
-
     ensure_dir(snapshot_path)
+    # Record mtime before snapshot so we can detect when HA has written the new file
+    mtime_before = (
+        os.path.getmtime(snapshot_path) if os.path.exists(snapshot_path) else 0
+    )
     camera_snapshot(camera_entity, snapshot_path)
+    # Wait until the file is updated (HA writes asynchronously) — max 3s
+    deadline = time.time() + 3.0
+    while time.time() < deadline:
+        if os.path.exists(snapshot_path):
+            mtime_now = os.path.getmtime(snapshot_path)
+            if mtime_now > mtime_before:
+                break
+        time.sleep(0.05)
     return cv2.imread(snapshot_path)
 
 
@@ -135,6 +146,7 @@ def recognize_frame(
         except Exception as e:
             print(f"⚠️  Could not save detection snapshot: {e}")
 
+    # ── OCR ──────────────────────────────────────────────────────────────────
     if ocr_engine == "trocr" and trocr_infer_fn is not None:
         plate, ocr_conf = trocr_infer_fn(plate_crop, debug)
     else:

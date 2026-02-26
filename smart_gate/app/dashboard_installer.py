@@ -2,23 +2,28 @@ import os
 import shutil
 import yaml
 import requests
-from constants import DASHBOARD_SRC, DASHBOARD_DST, HASS_URL, HEADERS
-
-# Lovelace dashboard url_path — must match the path in dashboard.yaml views
-DASHBOARD_URL_PATH = "smart-gate"
+from constants import (
+    DASHBOARD_SRC,
+    DASHBOARD_DST,
+    DASHBOARD_URL_PATH,
+    LOVELACE_DASHBOARDS_FILE,
+    HASS_URL,
+    HEADERS,
+)
 
 
 def install_dashboard() -> None:
     """
     1. Copy bundled HTML files from DASHBOARD_SRC to DASHBOARD_DST
-    2. Create the Lovelace dashboard via HA API (if not already present)
-    3. Push the dashboard config (views) from dashboard.yaml
+    2. Register Smart Gate dashboard in /config/dashboards.yaml
+    3. Reload Lovelace via HA API so the sidebar link appears immediately
     """
     _copy_files()
-    _register_lovelace_dashboard()
+    _register_dashboard_yaml()
+    _reload_lovelace()
 
 
-# ── Step 1: copy files ────────────────────────────────────────────────────────
+# ── Step 1: copy HTML files ───────────────────────────────────────────────────
 
 
 def _copy_files() -> None:
@@ -36,72 +41,66 @@ def _copy_files() -> None:
     print(f"[SmartGate] Dashboard files installed: {DASHBOARD_SRC} → {DASHBOARD_DST}")
 
 
-# ── Step 2: register Lovelace dashboard + sidebar ────────────────────────────
+# ── Step 2: register in dashboards.yaml ──────────────────────────────────────
 
 
-def _register_lovelace_dashboard() -> None:
+def _register_dashboard_yaml() -> None:
     """
-    Create the Smart Gate Lovelace dashboard with sidebar link via HA API.
-    If the dashboard already exists, only pushes updated config.
+    Add Smart Gate entry to /config/dashboards.yaml.
+    HA reads this file at startup to populate the sidebar.
+    If the entry already exists it is left unchanged.
     """
-    try:
-        if not _dashboard_exists():
-            _create_dashboard()
-        _push_dashboard_config()
-    except Exception as e:
-        print(f"[SmartGate] Dashboard registration error: {e}")
-        print(
-            "[SmartGate] Dashboard files are installed — add the panel manually in HA if needed"
-        )
-
-
-def _dashboard_exists() -> bool:
-    resp = requests.get(
-        f"{HASS_URL}/lovelace/dashboards",
-        headers=HEADERS,
-        timeout=10,
-    )
-    resp.raise_for_status()
-    dashboards = resp.json()
-    return any(d.get("url_path") == DASHBOARD_URL_PATH for d in dashboards)
-
-
-def _create_dashboard() -> None:
-    payload = {
-        "url_path": DASHBOARD_URL_PATH,
-        "title": "Smart Gate",
-        "icon": "mdi:gate",
-        "show_in_sidebar": True,
-        "require_admin": False,
+    entry = {
+        "smart-gate": {
+            "mode": "yaml",
+            "filename": "www/smart_gate/dashboard/dashboard.yaml",
+            "title": "Smart Gate",
+            "icon": "mdi:gate",
+            "show_in_sidebar": True,
+            "require_admin": False,
+        }
     }
-    resp = requests.post(
-        f"{HASS_URL}/lovelace/dashboards",
-        headers=HEADERS,
-        json=payload,
-        timeout=10,
-    )
-    resp.raise_for_status()
-    print(f"[SmartGate] Lovelace dashboard created (url_path: {DASHBOARD_URL_PATH})")
 
+    # Load existing dashboards.yaml or start fresh
+    existing = {}
+    if os.path.exists(LOVELACE_DASHBOARDS_FILE):
+        try:
+            with open(LOVELACE_DASHBOARDS_FILE) as f:
+                existing = yaml.safe_load(f) or {}
+        except Exception as e:
+            print(f"[SmartGate] Could not read {LOVELACE_DASHBOARDS_FILE}: {e}")
 
-def _push_dashboard_config() -> None:
-    """Read dashboard.yaml from the installed files and push it as the dashboard config."""
-    config_path = os.path.join(DASHBOARD_DST, "dashboard.yaml")
-
-    if not os.path.exists(config_path):
-        print(
-            f"[SmartGate] dashboard.yaml not found at {config_path} — skipping config push"
-        )
+    if DASHBOARD_URL_PATH in existing:
+        print("[SmartGate] Dashboard entry already present in dashboards.yaml")
         return
 
-    with open(config_path) as f:
-        config = yaml.safe_load(f)
+    existing.update(entry)
 
-    resp = requests.post(
-        f"{HASS_URL}/lovelace/dashboards/{DASHBOARD_URL_PATH}/config",
-        headers=HEADERS,
-        json=config,
-        timeout=10,
-    )
-    resp.raise_for_status()
-    print(f"[SmartGate] Lovelace dashboard config pushed")
+    try:
+        with open(LOVELACE_DASHBOARDS_FILE, "w") as f:
+            yaml.dump(existing, f, default_flow_style=False, allow_unicode=True)
+        print(f"[SmartGate] Dashboard registered in {LOVELACE_DASHBOARDS_FILE}")
+    except Exception as e:
+        print(f"[SmartGate] Could not write {LOVELACE_DASHBOARDS_FILE}: {e}")
+
+
+# ── Step 3: reload Lovelace ───────────────────────────────────────────────────
+
+
+def _reload_lovelace() -> None:
+    """
+    Tell HA to reload Lovelace resources so the new dashboard
+    appears in the sidebar without a manual restart.
+    """
+    try:
+        resp = requests.post(
+            f"{HASS_URL}/services/lovelace/reload_resources",
+            headers=HEADERS,
+            json={},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        print("[SmartGate] Lovelace reloaded")
+    except Exception as e:
+        print(f"[SmartGate] Lovelace reload failed (non-critical): {e}")
+        print("[SmartGate] Restart Home Assistant once to apply the new dashboard")
