@@ -2,14 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [2.1.1] - 2026-02-26
 
 ### 🐛 Bug Fixes
 
 - Annotated frame overwriting latest snapshot
+- Race condition between snapshots
 
 ### 📚 Documentation
 
+- Update changelog [skip ci]
 - Update changelog [skip ci]
 
 ### 🧪 Testing
