@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🐛 Bug Fixes
+
+- Annotated frame overwriting latest snapshot
+
+### 📚 Documentation
+
+- Update changelog [skip ci]
+
+### 🧪 Testing
+
+- Adds tests for new functionalities
+
 ## [2.1.0] - 2026-02-25
 
 ### 🚀 Features
